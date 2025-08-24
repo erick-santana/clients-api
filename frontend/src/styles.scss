@@ -1,0 +1,220 @@
+/* You can add global styles to this file, and also import other style files */
+@import '@angular/material/prebuilt-themes/indigo-pink.css';
+
+/* Global Styles */
+* {
+  box-sizing: border-box;
+}
+
+html, body {
+  height: 100%;
+  margin: 0;
+  font-family: 'Roboto', sans-serif;
+  background-color: #f5f5f5;
+}
+
+body {
+  margin: 0;
+  font-family: Roboto, "Helvetica Neue", sans-serif;
+}
+
+/* Material Design Overrides */
+.mat-mdc-card {
+  border-radius: 8px !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1) !important;
+}
+
+.mat-mdc-button {
+  border-radius: 4px !important;
+}
+
+.mat-mdc-raised-button {
+  border-radius: 4px !important;
+}
+
+/* Custom Utility Classes */
+.text-center {
+  text-align: center;
+}
+
+.text-right {
+  text-align: right;
+}
+
+.text-left {
+  text-align: left;
+}
+
+.mt-16 {
+  margin-top: 16px;
+}
+
+.mb-16 {
+  margin-bottom: 16px;
+}
+
+.ml-16 {
+  margin-left: 16px;
+}
+
+.mr-16 {
+  margin-right: 16px;
+}
+
+.p-16 {
+  padding: 16px;
+}
+
+.pt-16 {
+  padding-top: 16px;
+}
+
+.pb-16 {
+  padding-bottom: 16px;
+}
+
+.pl-16 {
+  padding-left: 16px;
+}
+
+.pr-16 {
+  padding-right: 16px;
+}
+
+/* Responsive Utilities */
+@media (max-width: 768px) {
+  .hide-mobile {
+    display: none !important;
+  }
+}
+
+@media (min-width: 769px) {
+  .hide-desktop {
+    display: none !important;
+  }
+}
+
+/* Loading Spinner Styles */
+.loading-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 20px;
+}
+
+/* Toastr Customization */
+.toast-container {
+  z-index: 9999 !important;
+}
+
+.toast-success {
+  background-color: #4caf50 !important;
+}
+
+.toast-error {
+  background-color: #f44336 !important;
+}
+
+.toast-warning {
+  background-color: #ff9800 !important;
+}
+
+.toast-info {
+  background-color: #2196f3 !important;
+}
+
+/* Table Styles */
+.mat-mdc-table {
+  width: 100%;
+  background: white;
+}
+
+.mat-mdc-header-cell {
+  font-weight: 600 !important;
+  color: #333 !important;
+  background-color: #f5f5f5 !important;
+}
+
+.mat-mdc-row:hover {
+  background-color: #f8f9fa !important;
+}
+
+/* Form Styles */
+.mat-mdc-form-field {
+  width: 100%;
+}
+
+.mat-mdc-form-field-appearance-outline .mat-mdc-form-field-outline {
+  color: #ccc;
+}
+
+.mat-mdc-form-field-appearance-outline.mat-focused .mat-mdc-form-field-outline-thick {
+  color: #3f51b5;
+}
+
+/* Button Styles */
+.mat-mdc-raised-button.mat-primary {
+  background-color: #3f51b5 !important;
+}
+
+.mat-mdc-raised-button.mat-accent {
+  background-color: #ff4081 !important;
+}
+
+.mat-mdc-raised-button.mat-warn {
+  background-color: #f44336 !important;
+}
+
+/* Card Styles */
+.mat-mdc-card-header {
+  background-color: #f8f9fa !important;
+  border-bottom: 1px solid #e9ecef !important;
+}
+
+.mat-mdc-card-title {
+  margin: 0 !important;
+  font-size: 18px !important;
+  font-weight: 500 !important;
+}
+
+/* Toolbar Styles */
+.mat-mdc-toolbar {
+  background-color: #3f51b5 !important;
+  color: white !important;
+}
+
+/* Dialog Styles */
+.mat-mdc-dialog-container {
+  border-radius: 8px !important;
+}
+
+.mat-mdc-dialog-title {
+  margin: 0 !important;
+  font-size: 20px !important;
+  font-weight: 500 !important;
+}
+
+/* Snackbar Styles */
+.mat-mdc-snack-bar-container {
+  border-radius: 4px !important;
+}
+
+.mat-mdc-snack-bar-container.success {
+  background-color: #4caf50 !important;
+  color: white !important;
+}
+
+.mat-mdc-snack-bar-container.error {
+  background-color: #f44336 !important;
+  color: white !important;
+}
+
+.mat-mdc-snack-bar-container.warning {
+  background-color: #ff9800 !important;
+  color: white !important;
+}
+
+.mat-mdc-snack-bar-container.info {
+  background-color: #2196f3 !important;
+  color: white !important;
+}

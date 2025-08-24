@@ -1,0 +1,206 @@
+{
+  "security": {
+    "vpc": {
+      "cidr_block": "10.0.0.0/16",
+      "subnets": {
+        "public": [
+          {
+            "cidr_block": "10.0.1.0/24",
+            "availability_zone": "us-east-1a",
+            "name": "clientes-public-subnet-1a"
+          },
+          {
+            "cidr_block": "10.0.2.0/24",
+            "availability_zone": "us-east-1b",
+            "name": "clientes-public-subnet-1b"
+          }
+        ],
+        "private": [
+          {
+            "cidr_block": "10.0.10.0/24",
+            "availability_zone": "us-east-1a",
+            "name": "clientes-private-subnet-1a"
+          },
+          {
+            "cidr_block": "10.0.11.0/24",
+            "availability_zone": "us-east-1b",
+            "name": "clientes-private-subnet-1b"
+          }
+        ]
+      }
+    },
+    "security_groups": {
+      "alb": {
+        "name": "clientes-alb-sg",
+        "description": "Security group for Application Load Balancer",
+        "ingress_rules": [
+          {
+            "port": 80,
+            "protocol": "tcp",
+            "source": "0.0.0.0/0",
+            "description": "HTTP from anywhere"
+          },
+          {
+            "port": 443,
+            "protocol": "tcp",
+            "source": "0.0.0.0/0",
+            "description": "HTTPS from anywhere"
+          }
+        ]
+      },
+      "ecs": {
+        "name": "clientes-ecs-sg",
+        "description": "Security group for ECS tasks",
+        "ingress_rules": [
+          {
+            "port": 8080,
+            "protocol": "tcp",
+            "source": "sg-alb",
+            "description": "Traffic from ALB"
+          }
+        ]
+      },
+      "rds": {
+        "name": "clientes-rds-sg",
+        "description": "Security group for RDS database",
+        "ingress_rules": [
+          {
+            "port": 3306,
+            "protocol": "tcp",
+            "source": "sg-ecs",
+            "description": "MySQL from ECS tasks"
+          }
+        ]
+      }
+    },
+    "cognito": {
+      "user_pool": {
+        "name": "clientes-user-pool",
+        "policies": {
+          "password_policy": {
+            "minimum_length": 8,
+            "require_uppercase": true,
+            "require_lowercase": true,
+            "require_numbers": true,
+            "require_symbols": true
+          },
+          "mfa": {
+            "enabled": true,
+            "type": "SMS"
+          }
+        },
+        "attributes": {
+          "email": {
+            "required": true,
+            "mutable": true
+          },
+          "name": {
+            "required": true,
+            "mutable": true
+          }
+        }
+      },
+      "identity_pool": {
+        "name": "clientes-identity-pool",
+        "allow_unauthenticated_identities": false
+      }
+    },
+    "kms": {
+      "keys": [
+        {
+          "alias": "clientes-encryption-key",
+          "description": "Encryption key for client data",
+          "key_usage": "ENCRYPT_DECRYPT",
+          "key_spec": "SYMMETRIC_DEFAULT"
+        },
+        {
+          "alias": "clientes-db-key",
+          "description": "Encryption key for database",
+          "key_usage": "ENCRYPT_DECRYPT",
+          "key_spec": "SYMMETRIC_DEFAULT"
+        }
+      ]
+    },
+    "secrets_manager": {
+      "secrets": [
+        {
+          "name": "clientes/db-credentials",
+          "description": "Database credentials",
+          "type": "keyvalue"
+        },
+        {
+          "name": "clientes/jwt-secret",
+          "description": "JWT signing secret",
+          "type": "string"
+        }
+      ]
+    },
+    "waf": {
+      "web_acl": {
+        "name": "clientes-waf-web-acl",
+        "description": "WAF for clientes application",
+        "rules": [
+          {
+            "name": "RateLimitRule",
+            "priority": 1,
+            "action": "BLOCK",
+            "rate_limit": 2000
+          },
+          {
+            "name": "SQLInjectionRule",
+            "priority": 2,
+            "action": "BLOCK",
+            "type": "SQL_INJECTION"
+          },
+          {
+            "name": "XSSRule",
+            "priority": 3,
+            "action": "BLOCK",
+            "type": "XSS"
+          }
+        ]
+      }
+    },
+    "monitoring": {
+      "cloudwatch": {
+        "log_groups": [
+          {
+            "name": "/ecs/clientes",
+            "retention_days": 30
+          },
+          {
+            "name": "/aws/rds/instance/clientes-db",
+            "retention_days": 30
+          }
+        ],
+        "alarms": [
+          {
+            "name": "clientes-high-cpu",
+            "metric": "CPUUtilization",
+            "threshold": 80,
+            "period": 300
+          },
+          {
+            "name": "clientes-high-memory",
+            "metric": "MemoryUtilization",
+            "threshold": 85,
+            "period": 300
+          }
+        ]
+      },
+      "guardduty": {
+        "enabled": true,
+        "finding_publishing_frequency": "FIFTEEN_MINUTES"
+      },
+      "security_hub": {
+        "enabled": true,
+        "auto_enable_controls": true
+      },
+      "cloudtrail": {
+        "enabled": true,
+        "log_file_validation": true,
+        "include_global_services": true
+      }
+    }
+  }
+}

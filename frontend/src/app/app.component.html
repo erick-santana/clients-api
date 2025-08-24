@@ -1,0 +1,44 @@
+<div class="app-container">
+  <!-- Loading Spinner -->
+  <div *ngIf="loading$ | async" class="loading-overlay">
+    <mat-spinner diameter="50"></mat-spinner>
+    <p>Carregando...</p>
+  </div>
+
+  <!-- Header -->
+  <mat-toolbar color="primary" class="app-header">
+    <mat-toolbar-row>
+      <span class="app-title">
+        <mat-icon>account_circle</mat-icon>
+        {{ title }}
+      </span>
+      <span class="spacer"></span>
+      <button mat-icon-button [matMenuTriggerFor]="menu">
+        <mat-icon>more_vert</mat-icon>
+      </button>
+      <mat-menu #menu="matMenu">
+        <button mat-menu-item>
+          <mat-icon>settings</mat-icon>
+          <span>Configurações</span>
+        </button>
+        <button mat-menu-item>
+          <mat-icon>help</mat-icon>
+          <span>Ajuda</span>
+        </button>
+      </mat-menu>
+    </mat-toolbar-row>
+  </mat-toolbar>
+
+  <!-- Main Content -->
+  <div class="app-content">
+    <router-outlet></router-outlet>
+  </div>
+
+  <!-- Footer -->
+  <footer class="app-footer">
+    <div class="footer-content">
+      <p>&copy; 2024 Sistema de Gerenciamento de Clientes. Todos os direitos reservados.</p>
+      <p>Versão 1.0.0</p>
+    </div>
+  </footer>
+</div>

@@ -1,0 +1,82 @@
+<div class="cliente-list-container">
+  <div class="header">
+    <h2>Gerenciamento de Clientes</h2>
+    <button mat-raised-button color="primary" (click)="openCreateDialog()">
+      <mat-icon>add</mat-icon>
+      Novo Cliente
+    </button>
+  </div>
+
+  <div class="content">
+    <mat-card>
+      <mat-card-content>
+        <div class="table-container">
+          <table mat-table [dataSource]="clientes" class="mat-elevation-z8">
+            <!-- ID Column -->
+            <ng-container matColumnDef="id">
+              <th mat-header-cell *matHeaderCellDef>ID</th>
+              <td mat-cell *matCellDef="let cliente">{{ cliente.id }}</td>
+            </ng-container>
+
+            <!-- Nome Column -->
+            <ng-container matColumnDef="nome">
+              <th mat-header-cell *matHeaderCellDef>Nome</th>
+              <td mat-cell *matCellDef="let cliente">{{ cliente.nome }}</td>
+            </ng-container>
+
+            <!-- Email Column -->
+            <ng-container matColumnDef="email">
+              <th mat-header-cell *matHeaderCellDef>Email</th>
+              <td mat-cell *matCellDef="let cliente">{{ cliente.email }}</td>
+            </ng-container>
+
+            <!-- Saldo Column -->
+            <ng-container matColumnDef="saldo">
+              <th mat-header-cell *matHeaderCellDef>Saldo</th>
+              <td mat-cell *matCellDef="let cliente">
+                <span [class.positive]="cliente.saldo >= 0" [class.negative]="cliente.saldo < 0">
+                  {{ formatCurrency(cliente.saldo) }}
+                </span>
+              </td>
+            </ng-container>
+
+            <!-- Data Criação Column -->
+            <ng-container matColumnDef="created_at">
+              <th mat-header-cell *matHeaderCellDef>Data de Criação</th>
+              <td mat-cell *matCellDef="let cliente">{{ formatDate(cliente.created_at!) }}</td>
+            </ng-container>
+
+            <!-- Actions Column -->
+            <ng-container matColumnDef="actions">
+              <th mat-header-cell *matHeaderCellDef>Ações</th>
+              <td mat-cell *matCellDef="let cliente">
+                <div class="actions-container">
+                  <button mat-icon-button color="primary" (click)="onEdit(cliente)" matTooltip="Editar">
+                    <mat-icon>edit</mat-icon>
+                  </button>
+                  <button mat-icon-button color="accent" (click)="onDeposit(cliente)" matTooltip="Depositar">
+                    <mat-icon>add_circle</mat-icon>
+                  </button>
+                  <button mat-icon-button color="warn" (click)="onWithdraw(cliente)" matTooltip="Sacar">
+                    <mat-icon>remove_circle</mat-icon>
+                  </button>
+                  <button mat-icon-button color="warn" (click)="onDelete(cliente)" matTooltip="Deletar">
+                    <mat-icon>delete</mat-icon>
+                  </button>
+                </div>
+              </td>
+            </ng-container>
+
+            <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+            <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
+          </table>
+
+          <div *ngIf="clientes.length === 0" class="no-data">
+            <mat-icon>inbox</mat-icon>
+            <p>Nenhum cliente encontrado</p>
+          </div>
+        </div>
+      </mat-card-content>
+    </mat-card>
+  </div>
+</div>

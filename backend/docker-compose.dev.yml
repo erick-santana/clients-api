@@ -1,0 +1,62 @@
+version: '3.8'
+
+services:
+  backend-dev:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    container_name: clientes-backend-dev
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      - NODE_ENV=development
+      - PORT=8080
+      - DATABASE_PATH=/app/database/clientes-dev.db
+      - LOG_LEVEL=debug
+    volumes:
+      - .:/app
+      - /app/node_modules
+      - ./database:/app/database
+      - ./logs:/app/logs
+    depends_on:
+      - mysql-dev
+    networks:
+      - clientes-dev-network
+
+  mysql-dev:
+    image: mysql:8.0
+    container_name: clientes-mysql-dev
+    restart: unless-stopped
+    ports:
+      - "3306:3306"
+    environment:
+      - MYSQL_ROOT_PASSWORD=rootpassword
+      - MYSQL_DATABASE=clientes_dev
+      - MYSQL_USER=clientes_user
+      - MYSQL_PASSWORD=clientes_password
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./database/init:/docker-entrypoint-initdb.d
+    networks:
+      - clientes-dev-network
+
+  # Redis para cache (opcional, simula ElastiCache)
+  redis-dev:
+    image: redis:7-alpine
+    container_name: clientes-redis-dev
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - clientes-dev-network
+
+volumes:
+  mysql_data:
+  redis_data:
+
+networks:
+  clientes-dev-network:
+    driver: bridge
