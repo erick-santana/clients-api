@@ -1,232 +1,201 @@
 import { TestBed } from '@angular/core/testing';
-import { ToastrService } from 'ngx-toastr';
+import { MatSnackBar } from '@angular/material/snack-bar';
 import { NotificationService } from './notification.service';
 
 describe('NotificationService', () => {
   let service: NotificationService;
-  let toastrService: jasmine.SpyObj<ToastrService>;
+  let snackBar: jasmine.SpyObj<MatSnackBar>;
 
   beforeEach(() => {
-    const toastrSpy = jasmine.createSpyObj('ToastrService', [
-      'success',
-      'error',
-      'warning',
-      'info',
-      'clear'
+    const snackBarSpy = jasmine.createSpyObj('MatSnackBar', [
+      'open',
+      'dismiss'
     ]);
 
     TestBed.configureTestingModule({
       providers: [
         NotificationService,
-        { provide: ToastrService, useValue: toastrSpy }
+        { provide: MatSnackBar, useValue: snackBarSpy }
       ]
     });
+
     service = TestBed.inject(NotificationService);
-    toastrService = TestBed.inject(ToastrService) as jasmine.SpyObj<ToastrService>;
+    snackBar = TestBed.inject(MatSnackBar) as jasmine.SpyObj<MatSnackBar>;
   });
 
   it('should be created', () => {
     expect(service).toBeTruthy();
   });
 
-  describe('success', () => {
-    it('should call toastr success with message', () => {
-      const message = 'Operação realizada com sucesso';
-      const title = 'Sucesso';
+  describe('showSuccess', () => {
+    it('should show success notification with title', () => {
+      const message = 'Test message';
+      const title = 'Test title';
 
-      service.success(message, title);
+      service.showSuccess(message, title);
 
-      expect(toastrService.success).toHaveBeenCalledWith(message, title);
+      expect(snackBar.open).toHaveBeenCalledWith(
+        `${title}: ${message}`,
+        'Fechar',
+        jasmine.any(Object)
+      );
     });
 
-    it('should call toastr success with default title', () => {
-      const message = 'Operação realizada com sucesso';
+    it('should show success notification without title', () => {
+      const message = 'Test message';
 
-      service.success(message);
+      service.showSuccess(message);
 
-      expect(toastrService.success).toHaveBeenCalledWith(message, 'Sucesso');
-    });
-  });
-
-  describe('error', () => {
-    it('should call toastr error with message', () => {
-      const message = 'Erro ao realizar operação';
-      const title = 'Erro';
-
-      service.error(message, title);
-
-      expect(toastrService.error).toHaveBeenCalledWith(message, title);
-    });
-
-    it('should call toastr error with default title', () => {
-      const message = 'Erro ao realizar operação';
-
-      service.error(message);
-
-      expect(toastrService.error).toHaveBeenCalledWith(message, 'Erro');
+      expect(snackBar.open).toHaveBeenCalledWith(
+        message,
+        'Fechar',
+        jasmine.any(Object)
+      );
     });
   });
 
-  describe('warning', () => {
-    it('should call toastr warning with message', () => {
-      const message = 'Atenção: dados incompletos';
-      const title = 'Atenção';
+  describe('showError', () => {
+    it('should show error notification with title', () => {
+      const message = 'Test error';
+      const title = 'Error title';
 
-      service.warning(message, title);
+      service.showError(message, title);
 
-      expect(toastrService.warning).toHaveBeenCalledWith(message, title);
+      expect(snackBar.open).toHaveBeenCalledWith(
+        `${title}: ${message}`,
+        'Fechar',
+        jasmine.any(Object)
+      );
     });
 
-    it('should call toastr warning with default title', () => {
-      const message = 'Atenção: dados incompletos';
+    it('should show error notification without title', () => {
+      const message = 'Test error';
 
-      service.warning(message);
+      service.showError(message);
 
-      expect(toastrService.warning).toHaveBeenCalledWith(message, 'Atenção');
+      expect(snackBar.open).toHaveBeenCalledWith(
+        message,
+        'Fechar',
+        jasmine.any(Object)
+      );
     });
   });
 
-  describe('info', () => {
-    it('should call toastr info with message', () => {
-      const message = 'Informação importante';
-      const title = 'Informação';
+  describe('showWarning', () => {
+    it('should show warning notification with title', () => {
+      const message = 'Test warning';
+      const title = 'Warning title';
 
-      service.info(message, title);
+      service.showWarning(message, title);
 
-      expect(toastrService.info).toHaveBeenCalledWith(message, title);
+      expect(snackBar.open).toHaveBeenCalledWith(
+        `${title}: ${message}`,
+        'Fechar',
+        jasmine.any(Object)
+      );
     });
 
-    it('should call toastr info with default title', () => {
-      const message = 'Informação importante';
+    it('should show warning notification without title', () => {
+      const message = 'Test warning';
 
-      service.info(message);
+      service.showWarning(message);
 
-      expect(toastrService.info).toHaveBeenCalledWith(message, 'Informação');
+      expect(snackBar.open).toHaveBeenCalledWith(
+        message,
+        'Fechar',
+        jasmine.any(Object)
+      );
+    });
+  });
+
+  describe('showInfo', () => {
+    it('should show info notification with title', () => {
+      const message = 'Test info';
+      const title = 'Info title';
+
+      service.showInfo(message, title);
+
+      expect(snackBar.open).toHaveBeenCalledWith(
+        `${title}: ${message}`,
+        'Fechar',
+        jasmine.any(Object)
+      );
+    });
+
+    it('should show info notification without title', () => {
+      const message = 'Test info';
+
+      service.showInfo(message);
+
+      expect(snackBar.open).toHaveBeenCalledWith(
+        message,
+        'Fechar',
+        jasmine.any(Object)
+      );
     });
   });
 
   describe('clear', () => {
-    it('should call toastr clear', () => {
+    it('should dismiss snackbar', () => {
       service.clear();
 
-      expect(toastrService.clear).toHaveBeenCalled();
+      expect(snackBar.dismiss).toHaveBeenCalled();
     });
   });
 
-  describe('showApiError', () => {
-    it('should show error message from API response', () => {
-      const apiError = {
-        message: 'Erro do servidor',
-        status: 500
-      };
+  describe('show', () => {
+    it('should show error notification', () => {
+      const message = 'Test error';
+      const title = 'Error title';
 
-      service.showApiError(apiError);
+      service.show('error', message, title);
 
-      expect(toastrService.error).toHaveBeenCalledWith(
-        'Erro do servidor',
-        'Erro'
+      expect(snackBar.open).toHaveBeenCalledWith(
+        `${title}: ${message}`,
+        'Fechar',
+        jasmine.any(Object)
       );
     });
 
-    it('should show default error message when no message provided', () => {
-      const apiError = {
-        status: 500
-      };
+    it('should show success notification', () => {
+      const message = 'Test success';
+      const title = 'Success title';
 
-      service.showApiError(apiError);
+      service.show('success', message, title);
 
-      expect(toastrService.error).toHaveBeenCalledWith(
-        'Erro interno do servidor',
-        'Erro'
+      expect(snackBar.open).toHaveBeenCalledWith(
+        `${title}: ${message}`,
+        'Fechar',
+        jasmine.any(Object)
       );
     });
 
-    it('should show network error message for network errors', () => {
-      const apiError = {
-        status: 0,
-        message: 'Network Error'
-      };
+    it('should show warning notification', () => {
+      const message = 'Test warning';
+      const title = 'Warning title';
 
-      service.showApiError(apiError);
+      service.show('warning', message, title);
 
-      expect(toastrService.error).toHaveBeenCalledWith(
-        'Erro de conexão. Verifique sua internet.',
-        'Erro'
+      expect(snackBar.open).toHaveBeenCalledWith(
+        `${title}: ${message}`,
+        'Fechar',
+        jasmine.any(Object)
       );
     });
 
-    it('should show specific error messages for different status codes', () => {
-      const error401 = { status: 401, message: 'Unauthorized' };
-      const error403 = { status: 403, message: 'Forbidden' };
-      const error404 = { status: 404, message: 'Not Found' };
-      const error422 = { status: 422, message: 'Validation Error' };
+    it('should show info notification', () => {
+      const message = 'Test info';
+      const title = 'Info title';
 
-      service.showApiError(error401);
-      expect(toastrService.error).toHaveBeenCalledWith(
-        'Não autorizado. Faça login novamente.',
-        'Erro'
-      );
+      service.show('info', message, title);
 
-      service.showApiError(error403);
-      expect(toastrService.error).toHaveBeenCalledWith(
-        'Acesso negado. Você não tem permissão.',
-        'Erro'
-      );
-
-      service.showApiError(error404);
-      expect(toastrService.error).toHaveBeenCalledWith(
-        'Recurso não encontrado.',
-        'Erro'
-      );
-
-      service.showApiError(error422);
-      expect(toastrService.error).toHaveBeenCalledWith(
-        'Dados inválidos. Verifique as informações.',
-        'Erro'
-      );
-    });
-  });
-
-  describe('showSuccess', () => {
-    it('should show success message for different operations', () => {
-      service.showSuccess('create');
-      expect(toastrService.success).toHaveBeenCalledWith(
-        'Cliente criado com sucesso!',
-        'Sucesso'
-      );
-
-      service.showSuccess('update');
-      expect(toastrService.success).toHaveBeenCalledWith(
-        'Cliente atualizado com sucesso!',
-        'Sucesso'
-      );
-
-      service.showSuccess('delete');
-      expect(toastrService.success).toHaveBeenCalledWith(
-        'Cliente removido com sucesso!',
-        'Sucesso'
-      );
-
-      service.showSuccess('deposit');
-      expect(toastrService.success).toHaveBeenCalledWith(
-        'Depósito realizado com sucesso!',
-        'Sucesso'
-      );
-
-      service.showSuccess('withdraw');
-      expect(toastrService.success).toHaveBeenCalledWith(
-        'Saque realizado com sucesso!',
-        'Sucesso'
-      );
-    });
-
-    it('should show generic success message for unknown operation', () => {
-      service.showSuccess('unknown');
-
-      expect(toastrService.success).toHaveBeenCalledWith(
-        'Operação realizada com sucesso!',
-        'Sucesso'
+      expect(snackBar.open).toHaveBeenCalledWith(
+        `${title}: ${message}`,
+        'Fechar',
+        jasmine.any(Object)
       );
     });
   });
 });
+
+

@@ -4,15 +4,114 @@ const { AppError } = require('../middleware/errorHandler');
 const defaultClienteService = new ClienteService();
 
 const createController = (clienteService = defaultClienteService) => {
+     /**
+    * @swagger
+    * /api/clientes:
+    *   get:
+    *     summary: Listar todos os clientes
+    *     description: Retorna uma lista paginada de todos os clientes cadastrados
+    *     tags: [Clientes]
+    *     security:
+    *       - BearerAuth: []
+    *     parameters:
+    *       - in: query
+    *         name: page
+    *         schema:
+    *           type: integer
+    *           default: 1
+    *         description: Número da página
+    *       - in: query
+    *         name: limit
+    *         schema:
+    *           type: integer
+    *           default: 10
+    *         description: Número de itens por página
+    *       - in: query
+    *         name: search
+    *         schema:
+    *           type: string
+    *         description: Termo de busca (nome ou email)
+    *     responses:
+    *       200:
+    *         description: Lista de clientes retornada com sucesso
+    *         content:
+    *           application/json:
+    *             schema:
+    *               $ref: '#/components/schemas/PaginatedResponse'
+    *       401:
+    *         description: Não autorizado
+    *       500:
+    *         description: Erro interno do servidor
+    */
   const listarTodos = async (req, res, next) => {
     try {
-      const clientes = await clienteService.listarTodos();
-      res.json({ success: true, data: clientes });
+      const page = parseInt(req.query.page) || 1;
+      const limit = parseInt(req.query.limit) || 10;
+      const search = req.query.search;
+      
+      // Filtros avançados
+      const filtros = {
+        saldoMin: req.query.saldoMin ? parseFloat(req.query.saldoMin) : undefined,
+        saldoMax: req.query.saldoMax ? parseFloat(req.query.saldoMax) : undefined,
+        dataInicio: req.query.dataInicio,
+        dataFim: req.query.dataFim,
+        ordenarPor: req.query.ordenarPor || 'created_at',
+        ordenacao: req.query.ordenacao || 'desc'
+      };
+
+      const result = await clienteService.listarTodos(page, limit, search, filtros);
+      res.json(result);
     } catch (error) {
       next(new AppError('Erro ao listar clientes', 500));
     }
   };
 
+
+
+  /**
+   * @swagger
+   * /api/clientes/{id}:
+   *   get:
+   *     summary: Buscar cliente por ID
+   *     description: Retorna os dados de um cliente específico pelo ID
+   *     tags: [Clientes]
+   *     security:
+   *       - BearerAuth: []
+   *     parameters:
+   *       - in: path
+   *         name: id
+   *         required: true
+   *         schema:
+   *           type: integer
+   *         description: ID do cliente
+   *         example: 1
+   *     responses:
+   *       200:
+   *         description: Cliente encontrado com sucesso
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 success:
+   *                   type: boolean
+   *                   example: true
+   *                 data:
+   *                   $ref: '#/components/schemas/Cliente'
+   *                 message:
+   *                   type: string
+   *                   example: Cliente encontrado
+   *       404:
+   *         description: Cliente não encontrado
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
+   *       401:
+   *         description: Não autorizado
+   *       500:
+   *         description: Erro interno do servidor
+   */
   const buscarPorId = async (req, res, next) => {
     try {
       const cliente = await clienteService.buscarPorId(req.params.id);
@@ -25,6 +124,74 @@ const createController = (clienteService = defaultClienteService) => {
     }
   };
 
+  /**
+   * @swagger
+   * /api/clientes:
+   *   post:
+   *     summary: Criar novo cliente
+   *     description: Cria um novo cliente no sistema
+   *     tags: [Clientes]
+   *     security:
+   *       - BearerAuth: []
+   *     requestBody:
+   *       required: true
+   *       content:
+   *         application/json:
+   *           schema:
+   *             type: object
+   *             required:
+   *               - nome
+   *               - email
+   *             properties:
+   *               nome:
+   *                 type: string
+   *                 minLength: 2
+   *                 maxLength: 100
+   *                 description: Nome completo do cliente
+   *                 example: João Silva
+   *               email:
+   *                 type: string
+   *                 format: email
+   *                 description: Email único do cliente
+   *                 example: joao.silva@example.com
+   *               saldo:
+   *                 type: number
+   *                 minimum: 0
+   *                 description: Saldo inicial da conta
+   *                 example: 1000.00
+   *     responses:
+   *       201:
+   *         description: Cliente criado com sucesso
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 success:
+   *                   type: boolean
+   *                   example: true
+   *                 data:
+   *                   $ref: '#/components/schemas/Cliente'
+   *                 message:
+   *                   type: string
+   *                   example: Cliente criado com sucesso
+   *       400:
+   *         description: Dados inválidos
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
+   *       409:
+   *         description: Email já cadastrado
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
+   *       401:
+   *         description: Não autorizado
+   *       500:
+   *         description: Erro interno do servidor
+   */
   const criar = async (req, res, next) => {
     try {
       const cliente = await clienteService.criar(req.body);
@@ -40,6 +207,80 @@ const createController = (clienteService = defaultClienteService) => {
     }
   };
 
+  /**
+   * @swagger
+   * /api/clientes/{id}:
+   *   put:
+   *     summary: Atualizar cliente
+   *     description: Atualiza os dados de um cliente existente
+   *     tags: [Clientes]
+   *     security:
+   *       - BearerAuth: []
+   *     parameters:
+   *       - in: path
+   *         name: id
+   *         required: true
+   *         schema:
+   *           type: integer
+   *         description: ID do cliente
+   *         example: 1
+   *     requestBody:
+   *       required: true
+   *       content:
+   *         application/json:
+   *           schema:
+   *             type: object
+   *             properties:
+   *               nome:
+   *                 type: string
+   *                 minLength: 2
+   *                 maxLength: 100
+   *                 description: Nome completo do cliente
+   *                 example: João Silva Atualizado
+   *               email:
+   *                 type: string
+   *                 format: email
+   *                 description: Email único do cliente
+   *                 example: joao.atualizado@example.com
+   *     responses:
+   *       200:
+   *         description: Cliente atualizado com sucesso
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 success:
+   *                   type: boolean
+   *                   example: true
+   *                 data:
+   *                   $ref: '#/components/schemas/Cliente'
+   *                 message:
+   *                   type: string
+   *                   example: Cliente atualizado com sucesso
+   *       400:
+   *         description: Dados inválidos
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
+   *       404:
+   *         description: Cliente não encontrado
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
+   *       409:
+   *         description: Email já cadastrado
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
+   *       401:
+   *         description: Não autorizado
+   *       500:
+   *         description: Erro interno do servidor
+   */
   const atualizar = async (req, res, next) => {
     try {
       const cliente = await clienteService.atualizar(req.params.id, req.body);
@@ -51,6 +292,9 @@ const createController = (clienteService = defaultClienteService) => {
       if (error.message === 'Email já cadastrado') {
         return next(new AppError(error.message, 409));
       }
+      if (error.message.includes('saldo não pode ser alterado')) {
+        return next(new AppError(error.message, 400));
+      }
       if (error.statusCode) {
         return next(error);
       }
@@ -58,6 +302,48 @@ const createController = (clienteService = defaultClienteService) => {
     }
   };
 
+  /**
+   * @swagger
+   * /api/clientes/{id}:
+   *   delete:
+   *     summary: Deletar cliente
+   *     description: Remove um cliente do sistema
+   *     tags: [Clientes]
+   *     security:
+   *       - BearerAuth: []
+   *     parameters:
+   *       - in: path
+   *         name: id
+   *         required: true
+   *         schema:
+   *           type: integer
+   *         description: ID do cliente
+   *         example: 1
+   *     responses:
+   *       200:
+   *         description: Cliente deletado com sucesso
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 success:
+   *                   type: boolean
+   *                   example: true
+   *                 message:
+   *                   type: string
+   *                   example: Cliente deletado com sucesso
+   *       404:
+   *         description: Cliente não encontrado
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
+   *       401:
+   *         description: Não autorizado
+   *       500:
+   *         description: Erro interno do servidor
+   */
   const deletar = async (req, res, next) => {
     try {
       const resultado = await clienteService.deletar(req.params.id);
@@ -73,6 +359,62 @@ const createController = (clienteService = defaultClienteService) => {
     }
   };
 
+  /**
+   * @swagger
+   * /api/clientes/{id}/depositar:
+   *   post:
+   *     summary: Realizar depósito
+   *     description: Realiza um depósito na conta do cliente
+   *     tags: [Operações Bancárias]
+   *     security:
+   *       - BearerAuth: []
+   *     parameters:
+   *       - in: path
+   *         name: id
+   *         required: true
+   *         schema:
+   *           type: integer
+   *         description: ID do cliente
+   *         example: 1
+   *     requestBody:
+   *       required: true
+   *       content:
+   *         application/json:
+   *           schema:
+   *             $ref: '#/components/schemas/Operacao'
+   *     responses:
+   *       200:
+   *         description: Depósito realizado com sucesso
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 success:
+   *                   type: boolean
+   *                   example: true
+   *                 data:
+   *                   $ref: '#/components/schemas/Cliente'
+   *                 message:
+   *                   type: string
+   *                   example: Depósito realizado com sucesso
+   *       400:
+   *         description: Dados inválidos
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
+   *       404:
+   *         description: Cliente não encontrado
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
+   *       401:
+   *         description: Não autorizado
+   *       500:
+   *         description: Erro interno do servidor
+   */
   const depositar = async (req, res, next) => {
     try {
       const cliente = await clienteService.depositar(req.params.id, req.body);
@@ -88,6 +430,62 @@ const createController = (clienteService = defaultClienteService) => {
     }
   };
 
+  /**
+   * @swagger
+   * /api/clientes/{id}/sacar:
+   *   post:
+   *     summary: Realizar saque
+   *     description: Realiza um saque na conta do cliente
+   *     tags: [Operações Bancárias]
+   *     security:
+   *       - BearerAuth: []
+   *     parameters:
+   *       - in: path
+   *         name: id
+   *         required: true
+   *         schema:
+   *           type: integer
+   *         description: ID do cliente
+   *         example: 1
+   *     requestBody:
+   *       required: true
+   *       content:
+   *         application/json:
+   *           schema:
+   *             $ref: '#/components/schemas/Operacao'
+   *     responses:
+   *       200:
+   *         description: Saque realizado com sucesso
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 success:
+   *                   type: boolean
+   *                   example: true
+   *                 data:
+   *                   $ref: '#/components/schemas/Cliente'
+   *                 message:
+   *                   type: string
+   *                   example: Saque realizado com sucesso
+   *       400:
+   *         description: Saldo insuficiente ou dados inválidos
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
+   *       404:
+   *         description: Cliente não encontrado
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
+   *       401:
+   *         description: Não autorizado
+   *       500:
+   *         description: Erro interno do servidor
+   */
   const sacar = async (req, res, next) => {
     try {
       const cliente = await clienteService.sacar(req.params.id, req.body);

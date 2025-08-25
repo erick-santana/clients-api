@@ -1,0 +1,131 @@
+.filtros-avancados {
+  margin-bottom: 16px;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  overflow: hidden;
+
+  .filtros-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 16px;
+    background-color: #f5f5f5;
+    cursor: pointer;
+    transition: background-color 0.2s;
+
+    &:hover {
+      background-color: #eeeeee;
+    }
+
+    span {
+      flex: 1;
+      font-weight: 500;
+    }
+  }
+
+  .filtros-content {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.3s ease-out;
+
+    &.expanded {
+      max-height: 500px;
+    }
+
+    .filtros-grid {
+      padding: 16px;
+      display: grid;
+      gap: 24px;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    }
+
+    .filtro-grupo {
+      .filtro-header {
+        margin-bottom: 12px;
+        
+        .mat-checkbox {
+          width: 100%;
+          
+          ::ng-deep .mat-checkbox-layout {
+            width: 100%;
+            align-items: center;
+          }
+          
+          ::ng-deep .mat-checkbox-label {
+            width: 100%;
+            margin-left: 8px;
+          }
+        }
+        
+        h4 {
+          margin: 0;
+          color: #333;
+          font-size: 14px;
+          font-weight: 500;
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+        }
+      }
+
+      h4 {
+        margin: 0 0 12px 0;
+        color: #333;
+        font-size: 14px;
+        font-weight: 500;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+
+      .saldo-filtros,
+      .data-filtros,
+      .ordenacao-filtros {
+        display: grid;
+        gap: 12px;
+        grid-template-columns: 1fr 1fr;
+        animation: fadeIn 0.3s ease-in;
+      }
+
+      .mat-form-field {
+        width: 100%;
+      }
+
+      // Melhorar espaçamento do prefixo R$
+      .mat-form-field-prefix {
+        margin-right: 8px;
+      }
+
+      span[matPrefix] {
+        margin-left: 8px;
+        margin-right: 4px;
+      }
+    }
+
+    .filtros-actions {
+      display: flex;
+      gap: 12px;
+      justify-content: flex-end;
+      padding: 16px;
+      border-top: 1px solid #e0e0e0;
+      background-color: #fafafa;
+
+      button {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        min-width: 120px;
+      }
+    }
+  }
+}
+
+// Animação para aparecer os filtros
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

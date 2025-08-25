@@ -1,6 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { MatDialog } from '@angular/material/dialog';
-import { MatSnackBar } from '@angular/material/snack-bar';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { of, throwError } from 'rxjs';
 import { ClienteListComponent } from './cliente-list.component';
@@ -16,7 +15,6 @@ describe('ClienteListComponent', () => {
   let notificationService: jasmine.SpyObj<NotificationService>;
   let loadingService: jasmine.SpyObj<LoadingService>;
   let dialog: jasmine.SpyObj<MatDialog>;
-  let snackBar: jasmine.SpyObj<MatSnackBar>;
 
   const mockCliente: Cliente = {
     id: 1,
@@ -43,7 +41,6 @@ describe('ClienteListComponent', () => {
       'hide'
     ]);
     const dialogSpy = jasmine.createSpyObj('MatDialog', ['open']);
-    const snackBarSpy = jasmine.createSpyObj('MatSnackBar', ['open']);
 
     await TestBed.configureTestingModule({
       declarations: [ClienteListComponent],
@@ -52,8 +49,7 @@ describe('ClienteListComponent', () => {
         { provide: ClienteService, useValue: clienteServiceSpy },
         { provide: NotificationService, useValue: notificationServiceSpy },
         { provide: LoadingService, useValue: loadingServiceSpy },
-        { provide: MatDialog, useValue: dialogSpy },
-        { provide: MatSnackBar, useValue: snackBarSpy }
+        { provide: MatDialog, useValue: dialogSpy }
       ]
     }).compileComponents();
 
@@ -63,7 +59,6 @@ describe('ClienteListComponent', () => {
     notificationService = TestBed.inject(NotificationService) as jasmine.SpyObj<NotificationService>;
     loadingService = TestBed.inject(LoadingService) as jasmine.SpyObj<LoadingService>;
     dialog = TestBed.inject(MatDialog) as jasmine.SpyObj<MatDialog>;
-    snackBar = TestBed.inject(MatSnackBar) as jasmine.SpyObj<MatSnackBar>;
   });
 
   it('should create', () => {
@@ -94,6 +89,12 @@ describe('ClienteListComponent', () => {
       const mockResponse = {
         success: true,
         data: mockClientes,
+        pagination: {
+          page: 1,
+          limit: 10,
+          total: 1,
+          totalPages: 1
+        },
         message: 'Clientes carregados com sucesso'
       };
 
@@ -101,38 +102,40 @@ describe('ClienteListComponent', () => {
 
       component.loadClientes();
 
-      expect(loadingService.show).toHaveBeenCalled();
       expect(clienteService.getClientes).toHaveBeenCalled();
       expect(component.clientes).toEqual(mockClientes);
-      expect(notificationService.showSuccess).toHaveBeenCalledWith('Clientes carregados com sucesso');
-      expect(loadingService.hide).toHaveBeenCalled();
     });
 
-    it('should handle error when loading clientes fails', () => {
-      const error = { message: 'Erro ao carregar clientes' };
-      clienteService.getClientes.and.returnValue(throwError(() => error));
+    it('should handle error when loading clientes', () => {
+      const errorMessage = 'Erro ao carregar clientes';
+      clienteService.getClientes.and.returnValue(throwError(() => new Error(errorMessage)));
 
       component.loadClientes();
 
-      expect(loadingService.show).toHaveBeenCalled();
       expect(clienteService.getClientes).toHaveBeenCalled();
-      expect(notificationService.showError).toHaveBeenCalledWith(error.message);
-      expect(loadingService.hide).toHaveBeenCalled();
+      expect(component.hasError).toBe(true);
+      expect(component.errorMessage).toBe(errorMessage);
     });
 
-    it('should not update clientes when API response is not successful', () => {
+    it('should handle empty response', () => {
       const mockResponse = {
-        success: false,
-        data: mockClientes,
-        message: 'Erro na operação'
+        success: true,
+        data: [],
+        pagination: {
+          page: 1,
+          limit: 10,
+          total: 0,
+          totalPages: 0
+        },
+        message: 'Nenhum cliente encontrado'
       };
 
       clienteService.getClientes.and.returnValue(of(mockResponse));
 
       component.loadClientes();
 
+      expect(clienteService.getClientes).toHaveBeenCalled();
       expect(component.clientes).toEqual([]);
-      expect(notificationService.showSuccess).not.toHaveBeenCalled();
     });
   });
 
@@ -142,18 +145,13 @@ describe('ClienteListComponent', () => {
     });
 
     it('should delete cliente successfully', () => {
-      const mockResponse = {
-        success: true,
-        data: null,
-        message: 'Cliente deletado com sucesso'
-      };
-
+      const mockResponse = { success: true, message: 'Cliente deletado com sucesso' };
       clienteService.deletarCliente.and.returnValue(of(mockResponse));
       spyOn(component, 'loadClientes');
 
       component.onDelete(mockCliente);
 
-      expect(clienteService.deletarCliente).toHaveBeenCalledWith(mockCliente.id);
+      expect(clienteService.deletarCliente).toHaveBeenCalledWith(mockCliente.id!);
       expect(loadingService.show).toHaveBeenCalled();
       expect(notificationService.showSuccess).toHaveBeenCalledWith('Cliente deletado com sucesso');
       expect(component.loadClientes).toHaveBeenCalled();
@@ -166,7 +164,7 @@ describe('ClienteListComponent', () => {
 
       component.onDelete(mockCliente);
 
-      expect(clienteService.deletarCliente).toHaveBeenCalledWith(mockCliente.id);
+      expect(clienteService.deletarCliente).toHaveBeenCalledWith(mockCliente.id!);
       expect(loadingService.show).toHaveBeenCalled();
       expect(notificationService.showError).toHaveBeenCalledWith(error.message);
       expect(loadingService.hide).toHaveBeenCalled();

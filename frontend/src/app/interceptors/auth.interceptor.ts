@@ -7,17 +7,18 @@ import {
   HttpErrorResponse
 } from '@angular/common/http';
 import { Observable, throwError } from 'rxjs';
-import { catchError } from 'rxjs/operators';
+import { catchError, switchMap } from 'rxjs/operators';
 import { environment } from '../../environments/environment';
+import { AuthService } from '../services/auth.service';
 
 @Injectable()
 export class AuthInterceptor implements HttpInterceptor {
 
-  constructor() {}
+  constructor(private authService: AuthService) {}
 
   intercept(request: HttpRequest<unknown>, next: HttpHandler): Observable<HttpEvent<unknown>> {
     // Adicionar headers de segurança
-    const secureReq = request.clone({
+    let secureReq = request.clone({
       setHeaders: {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
@@ -28,17 +29,22 @@ export class AuthInterceptor implements HttpInterceptor {
       }
     });
 
-    // Adicionar token de autenticação (se implementado)
-    const token = this.getAuthToken();
+    // Adicionar token de autenticação
+    const token = this.authService.getToken();
     if (token) {
-      secureReq.headers.set('Authorization', `Bearer ${token}`);
+      secureReq = secureReq.clone({
+        setHeaders: {
+          ...secureReq.headers,
+          'Authorization': `Bearer ${token}`
+        }
+      });
     }
 
     return next.handle(secureReq).pipe(
       catchError((error: HttpErrorResponse) => {
         // Tratar erros de autenticação
         if (error.status === 401) {
-          this.handleUnauthorized();
+          return this.handleUnauthorized(request, next);
         } else if (error.status === 403) {
           this.handleForbidden();
         }
@@ -48,25 +54,40 @@ export class AuthInterceptor implements HttpInterceptor {
     );
   }
 
-  private getAuthToken(): string | null {
-    // Implementar lógica de obtenção do token
-    // Por enquanto, retorna null (sem autenticação)
-    return null;
-  }
-
   private getCsrfToken(): string | null {
     // Implementar lógica de obtenção do CSRF token
     // Por enquanto, retorna null
     return null;
   }
 
-  private handleUnauthorized(): void {
-    // Redirecionar para login ou mostrar mensagem
-    console.warn('Usuário não autorizado');
+  private handleUnauthorized(request: HttpRequest<unknown>, next: HttpHandler): Observable<HttpEvent<unknown>> {
+    // Tentar renovar o token
+    return this.authService.refreshToken().pipe(
+      switchMap(success => {
+        if (success) {
+          // Token renovado, tentar a requisição novamente
+          const newToken = this.authService.getToken();
+          if (newToken) {
+            const newRequest = request.clone({
+              setHeaders: {
+                ...request.headers,
+                'Authorization': `Bearer ${newToken}`
+              }
+            });
+            return next.handle(newRequest);
+          }
+        }
+        
+        // Falha na renovação, fazer logout
+        this.authService.logout();
+        return throwError(() => new Error('Sessão expirada. Faça login novamente.'));
+      })
+    );
   }
 
   private handleForbidden(): void {
     // Mostrar mensagem de acesso negado
     console.warn('Acesso negado');
+    this.authService.logout();
   }
 }

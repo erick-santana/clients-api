@@ -405,17 +405,38 @@ aws s3 sync dist/clientes-app s3://your-bucket-name
 
 ## 📚 Documentação da API
 
-### Endpoints
+### Swagger/OpenAPI
 
-| Método | Endpoint | Descrição |
-|--------|----------|-----------|
-| GET | `/api/v1/clientes` | Listar todos os clientes |
-| GET | `/api/v1/clientes/:id` | Buscar cliente por ID |
-| POST | `/api/v1/clientes` | Criar novo cliente |
-| PUT | `/api/v1/clientes/:id` | Atualizar cliente |
-| DELETE | `/api/v1/clientes/:id` | Deletar cliente |
-| POST | `/api/v1/clientes/:id/depositar` | Realizar depósito |
-| POST | `/api/v1/clientes/:id/sacar` | Realizar saque |
+A API possui documentação completa usando Swagger/OpenAPI 3.0:
+
+#### **🌐 Acesso à Documentação:**
+- **Swagger UI**: `http://localhost:8080/api-docs`
+- **OpenAPI JSON**: `http://localhost:8080/api-docs.json`
+- **Documentação Estática**: `./backend/docs/index.html`
+
+#### **📋 Endpoints Documentados:**
+
+| Método | Endpoint | Descrição | Tag |
+|--------|----------|-----------|-----|
+| GET | `/api/clientes` | Listar todos os clientes (paginado) | Clientes |
+| GET | `/api/clientes/:id` | Buscar cliente por ID | Clientes |
+| POST | `/api/clientes` | Criar novo cliente | Clientes |
+| PUT | `/api/clientes/:id` | Atualizar cliente | Clientes |
+| DELETE | `/api/clientes/:id` | Deletar cliente | Clientes |
+| POST | `/api/clientes/:id/depositar` | Realizar depósito | Operações Bancárias |
+| POST | `/api/clientes/:id/sacar` | Realizar saque | Operações Bancárias |
+| GET | `/health` | Health Check | Sistema |
+
+#### **🔧 Comandos de Documentação:**
+```bash
+cd backend
+
+# Gerar documentação estática
+npm run docs:generate
+
+# Servir documentação estática
+npm run docs:serve
+```
 
 ### Exemplos de Uso
 
@@ -460,6 +481,10 @@ npm run migrate           # Executar migrações
 ./scripts/dev.sh          # Ambiente de desenvolvimento Angular
 ./scripts/prod.sh         # Ambiente de produção Angular
 ./scripts/test.sh         # Executar testes do frontend
+
+# Documentação
+npm run docs:generate      # Gerar documentação estática
+npm run docs:serve         # Servir documentação estática
 ```
 
 ### Frontend

@@ -27,7 +27,7 @@ const clienteSchema = Joi.object({
   saldo: Joi.number()
     .precision(2)
     .min(0)
-    .default(0)
+    .optional()
     .messages({
       'number.min': 'Saldo não pode ser negativo',
       'number.precision': 'Saldo deve ter no máximo 2 casas decimais'

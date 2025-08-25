@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { ToastrService } from 'ngx-toastr';
+import { MatSnackBar, MatSnackBarConfig } from '@angular/material/snack-bar';
 import { environment } from '../../environments/environment';
 
 export type NotificationType = 'success' | 'error' | 'warning' | 'info';
@@ -9,32 +9,36 @@ export type NotificationType = 'success' | 'error' | 'warning' | 'info';
 })
 export class NotificationService {
 
-  constructor(private toastr: ToastrService) {
-    this.configureToastr();
-  }
+  constructor(private snackBar: MatSnackBar) {}
 
-  private configureToastr(): void {
-    this.toastr.toastrConfig.timeOut = 5000;
-    this.toastr.toastrConfig.positionClass = 'toast-top-right';
-    this.toastr.toastrConfig.preventDuplicates = true;
-    this.toastr.toastrConfig.closeButton = true;
-    this.toastr.toastrConfig.progressBar = true;
+  private getSnackBarConfig(type: NotificationType): MatSnackBarConfig {
+    const config: MatSnackBarConfig = {
+      duration: 4000,
+      horizontalPosition: 'center',
+      verticalPosition: 'top',
+      panelClass: [`snackbar-${type}`]
+    };
+    return config;
   }
 
   showSuccess(message: string, title?: string): void {
-    this.toastr.success(message, title || 'Sucesso');
+    const fullMessage = title ? `${title}: ${message}` : message;
+    this.snackBar.open(fullMessage, 'Fechar', this.getSnackBarConfig('success'));
   }
 
   showError(message: string, title?: string): void {
-    this.toastr.error(message, title || 'Erro');
+    const fullMessage = title ? `${title}: ${message}` : message;
+    this.snackBar.open(fullMessage, 'Fechar', this.getSnackBarConfig('error'));
   }
 
   showWarning(message: string, title?: string): void {
-    this.toastr.warning(message, title || 'Atenção');
+    const fullMessage = title ? `${title}: ${message}` : message;
+    this.snackBar.open(fullMessage, 'Fechar', this.getSnackBarConfig('warning'));
   }
 
   showInfo(message: string, title?: string): void {
-    this.toastr.info(message, title || 'Informação');
+    const fullMessage = title ? `${title}: ${message}` : message;
+    this.snackBar.open(fullMessage, 'Fechar', this.getSnackBarConfig('info'));
   }
 
   show(type: NotificationType, message: string, title?: string): void {
@@ -55,6 +59,6 @@ export class NotificationService {
   }
 
   clear(): void {
-    this.toastr.clear();
+    this.snackBar.dismiss();
   }
 }

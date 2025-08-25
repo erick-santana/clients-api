@@ -7,7 +7,7 @@ import {
   HttpErrorResponse
 } from '@angular/common/http';
 import { Observable, throwError } from 'rxjs';
-import { catchError, retry, delay } from 'rxjs/operators';
+import { catchError } from 'rxjs/operators';
 import { environment } from '../../environments/environment';
 
 @Injectable()
@@ -17,17 +17,6 @@ export class ErrorInterceptor implements HttpInterceptor {
 
   intercept(request: HttpRequest<unknown>, next: HttpHandler): Observable<HttpEvent<unknown>> {
     return next.handle(request).pipe(
-      // Retry com backoff exponencial para erros de rede
-      retry({
-        count: 2,
-        delay: (error, retryCount) => {
-          if (retryCount === 1) {
-            return delay(1000); // 1 segundo
-          }
-          return delay(2000); // 2 segundos
-        },
-        resetOnSuccess: true
-      }),
       catchError((error: HttpErrorResponse) => {
         let errorMessage = 'Ocorreu um erro inesperado';
 
@@ -88,9 +77,6 @@ export class ErrorInterceptor implements HttpInterceptor {
             error: error
           });
         }
-
-        // Aqui você pode integrar com um serviço de notificação
-        // this.notificationService.showError(errorMessage);
 
         return throwError(() => new Error(errorMessage));
       })

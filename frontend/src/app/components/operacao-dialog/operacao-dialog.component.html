@@ -1,0 +1,48 @@
+<div class="operacao-dialog">
+  <h2 mat-dialog-title>
+    <mat-icon>{{ getIcon() }}</mat-icon>
+    {{ getTitle() }}
+  </h2>
+
+  <form [formGroup]="operacaoForm" (ngSubmit)="onSubmit()">
+    <mat-dialog-content>
+      <div class="form-container">
+        <div class="cliente-info">
+          <h3>Cliente: {{ cliente.nome }}</h3>
+          <p>Saldo atual: <strong>{{ formatCurrency(cliente.saldo) }}</strong></p>
+        </div>
+
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Valor</mat-label>
+          <input matInput formControlName="valor" type="number" step="0.01" min="0.01" placeholder="0.00">
+          <span matPrefix>R$&nbsp;</span>
+          <mat-error *ngIf="operacaoForm.get('valor')?.hasError('required')">
+            {{ getErrorMessage() }}
+          </mat-error>
+          <mat-error *ngIf="operacaoForm.get('valor')?.hasError('min')">
+            {{ getErrorMessage() }}
+          </mat-error>
+          <mat-error *ngIf="operacaoForm.get('valor')?.hasError('saldoInsuficiente')">
+            {{ getErrorMessage() }}
+          </mat-error>
+        </mat-form-field>
+
+        <div class="warning" *ngIf="tipo === 'sacar'">
+          <mat-icon color="warn">warning</mat-icon>
+          <span>Certifique-se de que o cliente possui saldo suficiente para o saque.</span>
+        </div>
+      </div>
+    </mat-dialog-content>
+
+    <mat-dialog-actions align="end">
+      <button mat-button type="button" (click)="onCancel()">
+        <mat-icon>cancel</mat-icon>
+        Cancelar
+      </button>
+      <button mat-raised-button [color]="tipo === 'depositar' ? 'primary' : 'accent'" type="submit" [disabled]="operacaoForm.invalid">
+        <mat-icon>{{ getIcon() }}</mat-icon>
+        {{ getButtonText() }}
+      </button>
+    </mat-dialog-actions>
+  </form>
+</div>

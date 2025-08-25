@@ -1,0 +1,60 @@
+.cliente-dialog {
+  mat-dialog-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 16px;
+  }
+
+  mat-dialog-content {
+    padding: 16px 24px;
+  }
+
+  .form-container {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    min-width: 400px;
+    
+    .full-width {
+      width: 100%;
+    }
+    
+    .invalid-field {
+      .mat-form-field-outline {
+        color: #f44336 !important;
+      }
+      
+      .mat-form-field-label {
+        color: #f44336 !important;
+      }
+      
+      .mat-input-element {
+        color: #f44336 !important;
+      }
+    }
+  }
+  
+  mat-dialog-actions {
+    padding: 16px 24px;
+    gap: 8px;
+    
+    button[disabled] {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+    
+    button:not([disabled]) {
+      transition: all 0.3s ease;
+      
+      &:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+      }
+    }
+  }
+  
+  .mat-form-field {
+    margin-bottom: 8px;
+  }
+}

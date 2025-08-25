@@ -18,5 +18,5 @@ COPY . .
 # Expor porta
 EXPOSE 8080
 
-# Comando para desenvolvimento
-CMD ["npm", "run", "dev"]
+# Comando para desenvolvimento (usando node diretamente)
+CMD ["npm", "start"]

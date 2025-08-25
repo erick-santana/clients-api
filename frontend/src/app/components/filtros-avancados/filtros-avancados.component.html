@@ -1,0 +1,125 @@
+<div class="filtros-avancados">
+  <div class="filtros-header" (click)="toggleExpanded()">
+    <mat-icon>{{ isExpanded ? 'expand_less' : 'expand_more' }}</mat-icon>
+    <span>Filtros Avançados</span>
+    <button mat-icon-button 
+            (click)="limparFiltros(); $event.stopPropagation()" 
+            type="button"
+            matTooltip="Limpar filtros">
+      <mat-icon>clear_all</mat-icon>
+    </button>
+  </div>
+
+  <div class="filtros-content" [class.expanded]="isExpanded">
+    <form [formGroup]="filtrosForm" 
+          (ngSubmit)="$event.preventDefault()"
+          (submit)="$event.preventDefault()">
+      <div class="filtros-grid">
+        <!-- Filtros de Saldo -->
+        <div class="filtro-grupo">
+          <div class="filtro-header">
+            <mat-checkbox formControlName="filtrarPorSaldo" color="primary">
+              <h4>Filtrar por Saldo</h4>
+            </mat-checkbox>
+          </div>
+          
+          <div class="saldo-filtros" *ngIf="mostrarFiltroSaldo">
+            <mat-form-field appearance="outline">
+              <mat-label>Saldo Mínimo</mat-label>
+              <input matInput 
+                     formControlName="saldoMin" 
+                     type="number" 
+                     step="0.01" 
+                     min="0" 
+                     placeholder="0.00"
+                     (keydown.enter)="$event.preventDefault()"
+                     (input)="$event.stopPropagation()"
+                     (change)="$event.stopPropagation()">
+              <span matPrefix>R$&nbsp;</span>
+            </mat-form-field>
+
+            <mat-form-field appearance="outline">
+              <mat-label>Saldo Máximo</mat-label>
+              <input matInput 
+                     formControlName="saldoMax" 
+                     type="number" 
+                     step="0.01" 
+                     min="0" 
+                     placeholder="0.00"
+                     (keydown.enter)="$event.preventDefault()"
+                     (input)="$event.stopPropagation()"
+                     (change)="$event.stopPropagation()">
+              <span matPrefix>R$&nbsp;</span>
+            </mat-form-field>
+          </div>
+        </div>
+
+        <!-- Filtros de Data -->
+        <div class="filtro-grupo">
+          <div class="filtro-header">
+            <mat-checkbox formControlName="filtrarPorData" color="primary">
+              <h4>Filtrar por Data de Criação</h4>
+            </mat-checkbox>
+          </div>
+          
+          <div class="data-filtros" *ngIf="mostrarFiltroData">
+            <mat-form-field appearance="outline">
+              <mat-label>Data Início</mat-label>
+              <input matInput 
+                     formControlName="dataInicio" 
+                     type="date"
+                     (keydown.enter)="$event.preventDefault()"
+                     (input)="$event.stopPropagation()"
+                     (change)="$event.stopPropagation()">
+            </mat-form-field>
+
+            <mat-form-field appearance="outline">
+              <mat-label>Data Fim</mat-label>
+              <input matInput 
+                     formControlName="dataFim" 
+                     type="date"
+                     (keydown.enter)="$event.preventDefault()"
+                     (input)="$event.stopPropagation()"
+                     (change)="$event.stopPropagation()">
+            </mat-form-field>
+          </div>
+        </div>
+
+        <!-- Ordenação -->
+        <div class="filtro-grupo">
+          <h4>Ordenação</h4>
+          <div class="ordenacao-filtros">
+            <mat-form-field appearance="outline">
+              <mat-label>Ordenar por</mat-label>
+              <mat-select formControlName="ordenarPor">
+                <mat-option *ngFor="let option of ordenacaoOptions" [value]="option.value">
+                  {{ option.label }}
+                </mat-option>
+              </mat-select>
+            </mat-form-field>
+
+            <mat-form-field appearance="outline">
+              <mat-label>Ordem</mat-label>
+              <mat-select formControlName="ordenacao">
+                <mat-option value="asc">Crescente</mat-option>
+                <mat-option value="desc">Decrescente</mat-option>
+              </mat-select>
+            </mat-form-field>
+          </div>
+        </div>
+      </div>
+
+      <!-- Botões de ação -->
+      <div class="filtros-actions">
+        <button mat-raised-button color="primary" (click)="aplicarFiltros()" type="button">
+          <mat-icon>filter_list</mat-icon>
+          Filtrar
+        </button>
+        <button mat-button (click)="limparFiltros()" type="button">
+          <mat-icon>clear</mat-icon>
+          Limpar
+        </button>
+      </div>
+    </form>
+  </div>
+</div>

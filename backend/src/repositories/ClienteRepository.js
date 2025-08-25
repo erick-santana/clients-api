@@ -1,5 +1,6 @@
 const Cliente = require('../models/Cliente');
 const logger = require('../utils/logger');
+const { nowUTC3, nowUTC3ISOString } = require('../utils/dateUtils');
 
 class ClienteRepository {
   constructor(dbInstance = null) {
@@ -12,6 +13,71 @@ class ClienteRepository {
       return clientesData.map(clienteData => Cliente.fromDatabase(clienteData));
     } catch (error) {
       logger.error('Erro ao buscar todos os clientes:', error);
+      throw new Error('Erro ao buscar clientes');
+    }
+  }
+
+  async findAllPaginated(limit = 10, offset = 0, search = null, filtros = {}) {
+    try {
+      let query = 'SELECT * FROM clientes';
+      let countQuery = 'SELECT COUNT(*) as total FROM clientes';
+      let params = [];
+      let whereConditions = [];
+
+      // Adicionar filtro de busca se fornecido
+      if (search) {
+        whereConditions.push('(nome LIKE ? OR email LIKE ?)');
+        params.push(`%${search}%`, `%${search}%`);
+      }
+
+      // Filtros de saldo
+      if (filtros.saldoMin !== undefined) {
+        whereConditions.push('saldo >= ?');
+        params.push(filtros.saldoMin);
+      }
+
+      if (filtros.saldoMax !== undefined) {
+        whereConditions.push('saldo <= ?');
+        params.push(filtros.saldoMax);
+      }
+
+      // Filtros de data
+      if (filtros.dataInicio) {
+        whereConditions.push('DATE(created_at) >= ?');
+        params.push(filtros.dataInicio);
+      }
+
+      if (filtros.dataFim) {
+        whereConditions.push('DATE(created_at) <= ?');
+        params.push(filtros.dataFim);
+      }
+
+      // Adicionar WHERE se houver condições
+      if (whereConditions.length > 0) {
+        const whereClause = ' WHERE ' + whereConditions.join(' AND ');
+        query += whereClause;
+        countQuery += whereClause;
+      }
+
+      // Ordenação
+      const ordenarPor = filtros.ordenarPor || 'created_at';
+      const ordenacao = filtros.ordenacao || 'desc';
+      query += ` ORDER BY ${ordenarPor} ${ordenacao.toUpperCase()}`;
+
+      query += ` LIMIT ${limit} OFFSET ${offset}`;
+
+      // Executar queries
+      const [clientesData, totalResult] = await Promise.all([
+        this.db.all(query, params),
+        this.db.get(countQuery, params)
+      ]);
+
+      return {
+        clientes: clientesData.map(clienteData => Cliente.fromDatabase(clienteData)),
+        total: totalResult.total
+      };
+    } catch (error) {
+      logger.error('Erro ao buscar clientes paginados:', error);
       throw new Error('Erro ao buscar clientes');
     }
   }
@@ -44,9 +110,15 @@ class ClienteRepository {
         throw new Error('Email já cadastrado');
       }
 
+      // Sempre usar saldo 0 para novos clientes
+      const saldoInicial = 0;
+
+      // Usar data atual em UTC-3 como objeto Date
+      const dataUTC3 = nowUTC3();
+
       const result = await this.db.run(
-        'INSERT INTO clientes (nome, email, saldo) VALUES (?, ?, ?)',
-        [clienteData.nome, clienteData.email, clienteData.saldo || 0]
+        'INSERT INTO clientes (nome, email, saldo, created_at, updated_at) VALUES (?, ?, ?, ?, ?)',
+        [clienteData.nome, clienteData.email, saldoInicial, dataUTC3, dataUTC3]
       );
 
       // Retornar instância do cliente criado
@@ -54,9 +126,9 @@ class ClienteRepository {
         id: result.id,
         nome: clienteData.nome,
         email: clienteData.email,
-        saldo: clienteData.saldo || 0,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
+        saldo: saldoInicial,
+        created_at: nowUTC3ISOString(),
+        updated_at: nowUTC3ISOString()
       });
     } catch (error) {
       logger.error('Erro ao criar cliente:', error);
@@ -75,28 +147,29 @@ class ClienteRepository {
       // Verificar se email já existe (exceto para o próprio cliente)
       if (clienteData.email && clienteData.email !== clienteExistente.email) {
         const clienteComEmail = await this.findByEmail(clienteData.email);
-        if (clienteComEmail && clienteComEmail.id !== parseInt(id)) {
+        if (clienteComEmail) {
           throw new Error('Email já cadastrado');
         }
       }
 
+      // Usar data atual em UTC-3 como objeto Date
+      const dataUTC3 = nowUTC3();
+
       const result = await this.db.run(
-        'UPDATE clientes SET nome = ?, email = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
-        [clienteData.nome, clienteData.email, id]
+        'UPDATE clientes SET nome = ?, email = ?, updated_at = ? WHERE id = ?',
+        [clienteData.nome, clienteData.email, dataUTC3, id]
       );
 
       if (result.changes === 0) {
-        throw new Error('Cliente não encontrado');
+        throw new Error('Erro ao atualizar cliente');
       }
 
       // Retornar cliente atualizado
       return new Cliente({
-        id: parseInt(id),
+        ...clienteExistente.toJSON(),
         nome: clienteData.nome,
         email: clienteData.email,
-        saldo: clienteExistente.saldo,
-        created_at: clienteExistente.created_at,
-        updated_at: new Date().toISOString()
+        updated_at: nowUTC3ISOString()
       });
     } catch (error) {
       logger.error('Erro ao atualizar cliente:', error);
@@ -128,9 +201,13 @@ class ClienteRepository {
       }
 
       const novoSaldo = cliente.calcularSaldoAposDeposito(valor);
+      
+      // Usar data atual em UTC-3 como objeto Date
+      const dataUTC3 = nowUTC3();
+
       const result = await this.db.run(
-        'UPDATE clientes SET saldo = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
-        [novoSaldo, id]
+        'UPDATE clientes SET saldo = ?, updated_at = ? WHERE id = ?',
+        [novoSaldo, dataUTC3, id]
       );
 
       if (result.changes === 0) {
@@ -141,7 +218,7 @@ class ClienteRepository {
       return new Cliente({
         ...cliente.toJSON(),
         saldo: novoSaldo,
-        updated_at: new Date().toISOString()
+        updated_at: nowUTC3ISOString()
       });
     } catch (error) {
       logger.error('Erro ao realizar depósito:', error);
@@ -163,9 +240,13 @@ class ClienteRepository {
       }
 
       const novoSaldo = cliente.calcularSaldoAposSaque(valor);
+      
+      // Usar data atual em UTC-3 como objeto Date
+      const dataUTC3 = nowUTC3();
+
       const result = await this.db.run(
-        'UPDATE clientes SET saldo = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
-        [novoSaldo, id]
+        'UPDATE clientes SET saldo = ?, updated_at = ? WHERE id = ?',
+        [novoSaldo, dataUTC3, id]
       );
 
       if (result.changes === 0) {
@@ -176,7 +257,7 @@ class ClienteRepository {
       return new Cliente({
         ...cliente.toJSON(),
         saldo: novoSaldo,
-        updated_at: new Date().toISOString()
+        updated_at: nowUTC3ISOString()
       });
     } catch (error) {
       logger.error('Erro ao realizar saque:', error);

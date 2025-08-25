@@ -5,7 +5,7 @@ class Cliente {
     this.id = data.id || null;
     this.nome = data.nome || '';
     this.email = data.email || '';
-    this.saldo = data.saldo || 0;
+    this.saldo = parseFloat(data.saldo) || 0;
     this.created_at = data.created_at || new Date().toISOString();
     this.updated_at = data.updated_at || new Date().toISOString();
   }

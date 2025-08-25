@@ -2,11 +2,15 @@ require('dotenv').config();
 const express = require('express');
 const morgan = require('morgan');
 const path = require('path');
+const swaggerUi = require('swagger-ui-express');
 
 // Importações locais
 const securityMiddleware = require('./middleware/security');
 const { errorHandler } = require('./middleware/errorHandler');
 const clienteRoutes = require('./routes/clienteRoutes');
+const healthController = require('./controllers/healthController');
+const swaggerSpecs = require('./config/swagger');
+const swaggerSpecsProd = require('./config/swagger.prod');
 const db = require('./config/databaseInstance');
 const logger = require('./utils/logger');
 
@@ -28,23 +32,41 @@ const createApp = (clienteController = null) => {
   app.use(express.json({ limit: '10mb' }));
   app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
+  // Documentação da API (Swagger)
+  const specs = process.env.NODE_ENV === 'production' ? swaggerSpecsProd : swaggerSpecs;
+  app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(specs, {
+    customCss: '.swagger-ui .topbar { display: none }',
+    customSiteTitle: 'API de Clientes - Documentação',
+    customfavIcon: '/favicon.ico',
+    swaggerOptions: {
+      docExpansion: 'list',
+      filter: true,
+      showRequestHeaders: true,
+      tryItOutEnabled: true
+    }
+  }));
+
+  // Rota para especificação OpenAPI em JSON
+  app.get('/api-docs.json', (req, res) => {
+    res.setHeader('Content-Type', 'application/json');
+    res.send(specs);
+  });
+
   // Rotas da API
   app.use('/api/clientes', clienteRoutes(clienteController));
 
   // Rota de health check
-  app.get('/health', (req, res) => {
-    res.json({
-      status: 'OK',
-      timestamp: new Date().toISOString(),
-      service: 'clientes-api'
-    });
-  });
+  app.get('/health', healthController.healthCheck);
 
   // Rota raiz
   app.get('/', (req, res) => {
     res.json({
       message: 'API de Clientes - Itaú',
       version: '1.0.0',
+      documentation: {
+        swagger: '/api-docs',
+        openapi: '/api-docs.json'
+      },
       endpoints: {
         clientes: '/api/clientes',
         health: '/health'
@@ -58,16 +80,24 @@ const createApp = (clienteController = null) => {
   // Função para inicializar o servidor
   const startServer = async () => {
     try {
+      logger.info('Iniciando servidor...');
+      
       // Conectar ao banco de dados
+      logger.info('Conectando ao banco de dados...');
       await db.connect();
-      logger.info('Conectado ao banco de dados');
+      logger.info('Conectado ao banco de dados com sucesso');
 
-      // Executar migrações
-      const migrate = require('./database/migrate');
-      await migrate();
-      logger.info('Migrações executadas com sucesso');
+      // Verificar se a conexão está funcionando
+      try {
+        const testResult = await db.get('SELECT COUNT(*) as total FROM clientes');
+        logger.info(`Teste de conexão: ${testResult.total} clientes encontrados`);
+      } catch (testError) {
+        logger.error('Erro no teste de conexão:', testError);
+        throw new Error('Falha no teste de conexão com o banco');
+      }
 
       // Iniciar servidor
+      logger.info(`Iniciando servidor na porta ${PORT}...`);
       const server = app.listen(PORT, () => {
         logger.info(`Servidor rodando na porta ${PORT}`);
       });
@@ -82,11 +112,10 @@ const createApp = (clienteController = null) => {
           try {
             await db.disconnect();
             logger.info('Conexão com banco de dados fechada');
-            process.exit(0);
           } catch (error) {
             logger.error('Erro ao fechar conexão com banco:', error);
-            process.exit(1);
           }
+          process.exit(0);
         });
       };
 

@@ -7,15 +7,30 @@ class ClienteService {
     this.clienteRepository = clienteRepository || new ClienteRepository();
   }
 
-  async listarTodos() {
+  async listarTodos(page = 1, limit = 10, search = null, filtros = {}) {
     try {
-      const clientes = await this.clienteRepository.findAll();
-      return clientes.map(cliente => cliente.toJSON());
+      const offset = (page - 1) * limit;
+      const result = await this.clienteRepository.findAllPaginated(limit, offset, search, filtros);
+      
+      const totalPages = Math.ceil(result.total / limit);
+      
+      return {
+        success: true,
+        data: result.clientes.map(cliente => cliente.toJSON()),
+        pagination: {
+          page,
+          limit,
+          total: result.total,
+          totalPages
+        }
+      };
     } catch (error) {
       logger.error('Erro ao listar clientes:', error);
       throw new Error('Erro ao listar clientes');
     }
   }
+
+
 
   async buscarPorId(id) {
     try {
@@ -46,8 +61,11 @@ class ClienteService {
 
   async atualizar(id, dadosCliente) {
     try {
+      // Remover campos que não devem ser atualizados
+      const { id: _, created_at, updated_at, ...dadosParaAtualizar } = dadosCliente;
+      
       // Validar dados de entrada
-      const clienteData = validateCliente(dadosCliente);
+      const clienteData = validateCliente(dadosParaAtualizar);
       
       // Atualizar cliente via repository
       const cliente = await this.clienteRepository.update(id, clienteData);

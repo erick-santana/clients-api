@@ -1,0 +1,48 @@
+<div class="cliente-dialog">
+  <h2 mat-dialog-title>
+    <mat-icon>{{ isEditMode ? 'edit' : 'add' }}</mat-icon>
+    {{ isEditMode ? 'Editar Cliente' : 'Novo Cliente' }}
+  </h2>
+
+  <form [formGroup]="clienteForm">
+    <mat-dialog-content>
+      <div class="form-container">
+        <mat-form-field appearance="outline" class="full-width" [class.invalid-field]="isFieldInvalid('nome')">
+          <mat-label>Nome</mat-label>
+          <input matInput 
+                 formControlName="nome" 
+                 placeholder="Digite o nome completo">
+          <mat-error *ngIf="isFieldInvalid('nome')">
+            {{ getErrorMessage('nome') }}
+          </mat-error>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="full-width" [class.invalid-field]="isFieldInvalid('email')">
+          <mat-label>Email</mat-label>
+          <input matInput 
+                 formControlName="email" 
+                 type="email" 
+                 placeholder="Digite o email">
+          <mat-error *ngIf="isFieldInvalid('email')">
+            {{ getErrorMessage('email') }}
+          </mat-error>
+        </mat-form-field>
+      </div>
+    </mat-dialog-content>
+
+    <mat-dialog-actions align="end">
+      <button mat-button (click)="onCancel()" type="button">
+        <mat-icon>cancel</mat-icon>
+        Cancelar
+      </button>
+      <button mat-raised-button 
+              color="primary" 
+              (click)="onSubmit()" 
+              type="button"
+              [disabled]="!isFormValid">
+        <mat-icon>{{ isEditMode ? 'save' : 'add' }}</mat-icon>
+        {{ isEditMode ? 'Salvar' : 'Criar' }}
+      </button>
+    </mat-dialog-actions>
+  </form>
+</div>

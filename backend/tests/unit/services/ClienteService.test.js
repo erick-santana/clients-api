@@ -4,6 +4,7 @@ const Cliente = require('../../../src/models/Cliente');
 // Mock do repository
 const mockRepository = {
   findAll: jest.fn(),
+  findAllPaginated: jest.fn(),
   findById: jest.fn(),
   findByEmail: jest.fn(),
   create: jest.fn(),
@@ -35,27 +36,54 @@ describe('ClienteService', () => {
   });
 
   describe('listarTodos', () => {
-    it('deve retornar lista de clientes quando sucesso', async () => {
+    it('deve retornar lista de clientes paginada quando sucesso', async () => {
       const clientes = [
         new Cliente({ id: 1, nome: 'João', email: 'joao@teste.com', saldo: 1000 }),
         new Cliente({ id: 2, nome: 'Maria', email: 'maria@teste.com', saldo: 2000 })
       ];
 
-      mockRepository.findAll.mockResolvedValue(clientes);
+      mockRepository.findAllPaginated.mockResolvedValue({
+        clientes,
+        total: 2
+      });
 
-      const resultado = await service.listarTodos();
+      const resultado = await service.listarTodos(1, 10);
 
-      expect(mockRepository.findAll).toHaveBeenCalled();
-      expect(resultado).toHaveLength(2);
-      expect(resultado[0]).toEqual(clientes[0].toJSON());
-      expect(resultado[1]).toEqual(clientes[1].toJSON());
+      expect(mockRepository.findAllPaginated).toHaveBeenCalledWith(10, 0, null);
+      expect(resultado.success).toBe(true);
+      expect(resultado.data).toHaveLength(2);
+      expect(resultado.data[0]).toEqual(clientes[0].toJSON());
+      expect(resultado.data[1]).toEqual(clientes[1].toJSON());
+      expect(resultado.pagination).toEqual({
+        page: 1,
+        limit: 10,
+        total: 2,
+        totalPages: 1
+      });
+    });
+
+    it('deve retornar lista de clientes com busca quando sucesso', async () => {
+      const clientes = [
+        new Cliente({ id: 1, nome: 'João', email: 'joao@teste.com', saldo: 1000 })
+      ];
+
+      mockRepository.findAllPaginated.mockResolvedValue({
+        clientes,
+        total: 1
+      });
+
+      const resultado = await service.listarTodos(1, 10, 'João');
+
+      expect(mockRepository.findAllPaginated).toHaveBeenCalledWith(10, 0, 'João');
+      expect(resultado.success).toBe(true);
+      expect(resultado.data).toHaveLength(1);
     });
 
     it('deve lançar erro quando repository falha', async () => {
       const erro = new Error('Erro de banco');
-      mockRepository.findAll.mockRejectedValue(erro);
+      mockRepository.findAllPaginated.mockRejectedValue(erro);
 
-      await expect(service.listarTodos()).rejects.toThrow('Erro ao listar clientes');
+      await expect(service.listarTodos(1, 10)).rejects.toThrow('Erro ao listar clientes');
     });
   });
 
