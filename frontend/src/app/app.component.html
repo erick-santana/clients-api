@@ -12,6 +12,19 @@
         {{ title }}
       </span>
       <span class="spacer"></span>
+      
+      <!-- Informações de autenticação -->
+      <div *ngIf="isAuthenticated$ | async" class="auth-info">
+        <span class="user-info">
+          <mat-icon>account_circle</mat-icon>
+          <span *ngIf="currentUser$ | async as user">
+            {{ user.username }}
+          </span>
+        </span>
+        <button mat-icon-button (click)="logout()" matTooltip="Sair">
+          <mat-icon>logout</mat-icon>
+        </button>
+      </div>
     </mat-toolbar-row>
   </mat-toolbar>
 

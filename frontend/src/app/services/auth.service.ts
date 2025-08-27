@@ -1,5 +1,6 @@
 import { Injectable } from '@angular/core';
 import { BehaviorSubject, Observable } from 'rxjs';
+import { HttpClient } from '@angular/common/http';
 import { environment } from '../../environments/environment';
 
 export interface AuthToken {
@@ -9,10 +10,23 @@ export interface AuthToken {
 }
 
 export interface User {
-  id: number;
-  email: string;
-  name: string;
+  username: string;
   role: string;
+}
+
+export interface LoginRequest {
+  username: string;
+  password: string;
+}
+
+export interface LoginResponse {
+  success: boolean;
+  data: {
+    token: string;
+    user: User;
+    expiresIn: string;
+  };
+  message: string;
 }
 
 @Injectable({
@@ -32,38 +46,50 @@ export class AuthService {
     map(token => !!token && this.isTokenValid(token))
   );
 
-  constructor() {
+  constructor(private http: HttpClient) {
     this.loadStoredAuth();
   }
 
   /**
    * Login do usuário
    */
-  login(email: string, password: string): Observable<{ success: boolean; message: string }> {
-    // Simular login - em produção, isso seria uma chamada HTTP
+  login(username: string, password: string): Observable<{ success: boolean; message: string }> {
+    const loginData: LoginRequest = { username, password };
+    
     return new Observable(observer => {
-      setTimeout(() => {
-        if (email === 'admin@example.com' && password === 'admin123') {
-          const token: AuthToken = {
-            token: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkFkbWluaXN0cmFkb3IiLCJlbWFpbCI6ImFkbWluQGV4YW1wbGUuY29tIiwicm9sZSI6ImFkbWluIiwiaWF0IjoxNTE2MjM5MDIyLCJleHAiOjk5OTk5OTk5OTl9.example',
-            expiresAt: Date.now() + (24 * 60 * 60 * 1000), // 24 horas
-            refreshToken: 'refresh_token_example'
-          };
+      this.http.post<LoginResponse>(`${environment.apiUrl}/auth/login`, loginData)
+        .subscribe({
+          next: (response) => {
+            if (response.success && response.data) {
+              // Calcular expiração baseada no expiresIn
+              const expiresIn = response.data.expiresIn;
+              const expiresAt = this.calculateExpirationTime(expiresIn);
+              
+              const token: AuthToken = {
+                token: response.data.token,
+                expiresAt: expiresAt,
+                refreshToken: undefined // Backend não fornece refresh token ainda
+              };
 
-          const user: User = {
-            id: 1,
-            email: 'admin@example.com',
-            name: 'Administrador',
-            role: 'admin'
-          };
+              const user: User = {
+                username: response.data.user.username,
+                role: response.data.user.role
+              };
 
-          this.setAuth(token, user);
-          observer.next({ success: true, message: 'Login realizado com sucesso' });
-        } else {
-          observer.next({ success: false, message: 'Email ou senha inválidos' });
-        }
-        observer.complete();
-      }, 1000);
+              this.setAuth(token, user);
+              observer.next({ success: true, message: response.message });
+            } else {
+              observer.next({ success: false, message: response.message || 'Erro no login' });
+            }
+            observer.complete();
+          },
+          error: (error) => {
+            console.error('Erro no login:', error);
+            const message = error.error?.message || error.message || 'Erro no login';
+            observer.next({ success: false, message });
+            observer.complete();
+          }
+        });
     });
   }
 
@@ -208,6 +234,27 @@ export class AuthService {
 
     const fiveMinutes = 5 * 60 * 1000;
     return auth.expiresAt - Date.now() < fiveMinutes;
+  }
+
+  /**
+   * Calcular tempo de expiração baseado no expiresIn
+   */
+  private calculateExpirationTime(expiresIn: string): number {
+    const now = Date.now();
+    
+    if (expiresIn.includes('h')) {
+      const hours = parseInt(expiresIn.replace('h', ''));
+      return now + (hours * 60 * 60 * 1000);
+    } else if (expiresIn.includes('m')) {
+      const minutes = parseInt(expiresIn.replace('m', ''));
+      return now + (minutes * 60 * 1000);
+    } else if (expiresIn.includes('s')) {
+      const seconds = parseInt(expiresIn.replace('s', ''));
+      return now + (seconds * 1000);
+    } else {
+      // Padrão: 24 horas
+      return now + (24 * 60 * 60 * 1000);
+    }
   }
 }
 

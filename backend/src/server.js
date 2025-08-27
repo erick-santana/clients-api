@@ -8,7 +8,9 @@ const swaggerUi = require('swagger-ui-express');
 const securityMiddleware = require('./middleware/security');
 const { errorHandler } = require('./middleware/errorHandler');
 const clienteRoutes = require('./routes/clienteRoutes');
+const authRoutes = require('./routes/authRoutes');
 const healthController = require('./controllers/healthController');
+const { authenticateToken } = require('./middleware/auth');
 const swaggerSpecs = require('./config/swagger');
 const swaggerSpecsProd = require('./config/swagger.prod');
 const db = require('./config/databaseInstance');
@@ -52,10 +54,16 @@ const createApp = (clienteController = null) => {
     res.send(specs);
   });
 
-  // Rotas da API
+  // Rotas de autenticação (não protegidas)
+  app.use('/api/auth', authRoutes);
+
+  // Middleware de autenticação para todas as outras rotas
+  app.use('/api', authenticateToken);
+
+  // Rotas da API (protegidas)
   app.use('/api/clientes', clienteRoutes(clienteController));
 
-  // Rota de health check
+  // Rota de health check (não protegida)
   app.get('/health', healthController.healthCheck);
 
   // Rota raiz
@@ -63,14 +71,20 @@ const createApp = (clienteController = null) => {
     res.json({
       message: 'API de Clientes - Itaú',
       version: '1.0.0',
+      authentication: {
+        login: '/api/auth/login',
+        verify: '/api/auth/verify'
+      },
       documentation: {
         swagger: '/api-docs',
         openapi: '/api-docs.json'
       },
       endpoints: {
-        clientes: '/api/clientes',
+        auth: '/api/auth',
+        clientes: '/api/clientes (protegido)',
         health: '/health'
-      }
+      },
+      note: 'Todas as rotas da API (exceto /api/auth e /health) requerem autenticação via Bearer Token'
     });
   });
 

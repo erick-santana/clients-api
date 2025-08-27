@@ -1,6 +1,7 @@
 const Cliente = require('../models/Cliente');
 const logger = require('../utils/logger');
 const { nowUTC3, nowUTC3ISOString } = require('../utils/dateUtils');
+const { v4: uuidv4 } = require('uuid');
 
 class ClienteRepository {
   constructor(dbInstance = null) {
@@ -62,7 +63,13 @@ class ClienteRepository {
       // Ordenação
       const ordenarPor = filtros.ordenarPor || 'created_at';
       const ordenacao = filtros.ordenacao || 'desc';
-      query += ` ORDER BY ${ordenarPor} ${ordenacao.toUpperCase()}`;
+      
+      // Validar campo de ordenação para prevenir SQL injection
+      const camposValidos = ['nome', 'email', 'saldo', 'created_at', 'id'];
+      const campoOrdenacao = camposValidos.includes(ordenarPor) ? ordenarPor : 'created_at';
+      const direcaoOrdenacao = ['asc', 'desc'].includes(ordenacao.toLowerCase()) ? ordenacao.toUpperCase() : 'DESC';
+      
+      query += ` ORDER BY ${campoOrdenacao} ${direcaoOrdenacao}`;
 
       query += ` LIMIT ${limit} OFFSET ${offset}`;
 
@@ -116,14 +123,17 @@ class ClienteRepository {
       // Usar data atual em UTC-3 como objeto Date
       const dataUTC3 = nowUTC3();
 
+      // Gerar UUID para o novo cliente
+      const clienteId = uuidv4();
+
       const result = await this.db.run(
-        'INSERT INTO clientes (nome, email, saldo, created_at, updated_at) VALUES (?, ?, ?, ?, ?)',
-        [clienteData.nome, clienteData.email, saldoInicial, dataUTC3, dataUTC3]
+        'INSERT INTO clientes (id, nome, email, saldo, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)',
+        [clienteId, clienteData.nome, clienteData.email, saldoInicial, dataUTC3, dataUTC3]
       );
 
       // Retornar instância do cliente criado
       return new Cliente({
-        id: result.id,
+        id: clienteId,
         nome: clienteData.nome,
         email: clienteData.email,
         saldo: saldoInicial,

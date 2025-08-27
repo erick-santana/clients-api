@@ -23,6 +23,8 @@ import { MatChipsModule } from '@angular/material/chips';
 import { MatDividerModule } from '@angular/material/divider';
 import { MatPaginatorModule } from '@angular/material/paginator';
 import { MatCheckboxModule } from '@angular/material/checkbox';
+import { MatDatepickerModule } from '@angular/material/datepicker';
+import { MatNativeDateModule } from '@angular/material/core';
 
 // Components
 import { AppComponent } from './app.component';
@@ -31,12 +33,16 @@ import { ClienteDialogComponent } from './components/cliente-dialog/cliente-dial
 import { OperacaoDialogComponent } from './components/operacao-dialog/operacao-dialog.component';
 import { ConfirmationDialogComponent } from './components/confirmation-dialog/confirmation-dialog.component';
 import { FiltrosAvancadosComponent } from './components/filtros-avancados/filtros-avancados.component';
+import { LoginComponent } from './components/login/login.component';
 
 // Services
 import { ClienteService } from './services/cliente.service';
 import { NotificationService } from './services/notification.service';
 import { LoadingService } from './services/loading.service';
 import { AuthService } from './services/auth.service';
+
+// Guards
+import { AuthGuard } from './guards/auth.guard';
 
 // Interceptors
 import { AuthInterceptor } from './interceptors/auth.interceptor';
@@ -72,7 +78,8 @@ class CustomRouteReuseStrategy extends RouteReuseStrategy {
 
 const routes: Routes = [
   { path: '', redirectTo: '/clientes', pathMatch: 'full' },
-  { path: 'clientes', component: ClienteListComponent },
+  { path: 'login', component: LoginComponent },
+  { path: 'clientes', component: ClienteListComponent, canActivate: [AuthGuard] },
   { path: '**', redirectTo: '/clientes' }
 ];
 
@@ -84,6 +91,7 @@ const routes: Routes = [
     OperacaoDialogComponent,
     ConfirmationDialogComponent,
     FiltrosAvancadosComponent,
+    LoginComponent,
   ],
   imports: [
     BrowserModule,
@@ -115,7 +123,9 @@ const routes: Routes = [
     MatChipsModule,
     MatDividerModule,
     MatPaginatorModule,
-    MatCheckboxModule
+    MatCheckboxModule,
+    MatDatepickerModule,
+    MatNativeDateModule
   ],
   providers: [
     ClienteService,

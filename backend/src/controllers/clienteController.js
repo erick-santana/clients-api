@@ -1,5 +1,6 @@
 const ClienteService = require('../services/ClienteService');
 const { AppError } = require('../middleware/errorHandler');
+const { validateFiltros } = require('../validators/filtrosValidator');
 
 const defaultClienteService = new ClienteService();
 
@@ -51,17 +52,23 @@ const createController = (clienteService = defaultClienteService) => {
       
       // Filtros avançados
       const filtros = {
-        saldoMin: req.query.saldoMin ? parseFloat(req.query.saldoMin) : undefined,
-        saldoMax: req.query.saldoMax ? parseFloat(req.query.saldoMax) : undefined,
-        dataInicio: req.query.dataInicio,
-        dataFim: req.query.dataFim,
+        saldoMin: req.query.saldoMin !== undefined ? parseFloat(req.query.saldoMin) : undefined,
+        saldoMax: req.query.saldoMax !== undefined ? parseFloat(req.query.saldoMax) : undefined,
+        dataInicio: req.query.dataInicio || undefined,
+        dataFim: req.query.dataFim || undefined,
         ordenarPor: req.query.ordenarPor || 'created_at',
         ordenacao: req.query.ordenacao || 'desc'
       };
 
-      const result = await clienteService.listarTodos(page, limit, search, filtros);
+      // Validar filtros
+      const filtrosValidados = validateFiltros(filtros);
+
+      const result = await clienteService.listarTodos(page, limit, search, filtrosValidados);
       res.json(result);
     } catch (error) {
+      if (error.statusCode) {
+        return next(error);
+      }
       next(new AppError('Erro ao listar clientes', 500));
     }
   };

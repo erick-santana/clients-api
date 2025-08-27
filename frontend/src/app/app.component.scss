@@ -23,6 +23,35 @@
   .spacer {
     flex: 1 1 auto;
   }
+
+  .auth-info {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+
+    .user-info {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 14px;
+      color: rgba(255, 255, 255, 0.9);
+
+      mat-icon {
+        font-size: 20px;
+        width: 20px;
+        height: 20px;
+      }
+    }
+
+    button {
+      color: rgba(255, 255, 255, 0.9);
+      transition: color 0.3s ease;
+
+      &:hover {
+        color: white;
+      }
+    }
+  }
 }
 
 .app-content {

@@ -98,6 +98,68 @@
         margin-left: 8px;
         margin-right: 4px;
       }
+
+      // Estilos para o date picker
+      .mat-datepicker-toggle {
+        color: #666;
+      }
+
+      .mat-datepicker-toggle:hover {
+        color: #1976d2;
+      }
+
+      // Melhorar a aparência do input de data
+      input[matInput][matDatepicker] {
+        cursor: pointer;
+      }
+
+      input[matInput][matDatepicker]:focus {
+        cursor: text;
+      }
+
+      // Estilos para mensagem de erro de data
+      .data-error {
+        grid-column: 1 / -1;
+        margin-top: -8px;
+        margin-bottom: 8px;
+        
+        mat-error {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          color: #f44336;
+          font-size: 12px;
+          font-weight: 500;
+          
+          mat-icon {
+            font-size: 16px;
+            width: 16px;
+            height: 16px;
+          }
+        }
+      }
+
+      // Estilos para mensagem de erro de saldo
+      .saldo-error {
+        grid-column: 1 / -1;
+        margin-top: -8px;
+        margin-bottom: 8px;
+        
+        mat-error {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          color: #f44336;
+          font-size: 12px;
+          font-weight: 500;
+          
+          mat-icon {
+            font-size: 16px;
+            width: 16px;
+            height: 16px;
+          }
+        }
+      }
     }
 
     .filtros-actions {

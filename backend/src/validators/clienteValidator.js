@@ -47,13 +47,11 @@ const operacaoSchema = Joi.object({
 });
 
 const idSchema = Joi.object({
-  id: Joi.number()
-    .integer()
-    .positive()
+  id: Joi.string()
+    .uuid()
     .required()
     .messages({
-      'number.integer': 'ID deve ser um número inteiro',
-      'number.positive': 'ID deve ser positivo',
+      'string.guid': 'ID deve ser um UUID válido',
       'any.required': 'ID é obrigatório'
     })
 });

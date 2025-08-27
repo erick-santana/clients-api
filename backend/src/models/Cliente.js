@@ -1,8 +1,9 @@
 const logger = require('../utils/logger');
+const { v4: uuidv4 } = require('uuid');
 
 class Cliente {
   constructor(data = {}) {
-    this.id = data.id || null;
+    this.id = data.id || uuidv4();
     this.nome = data.nome || '';
     this.email = data.email || '';
     this.saldo = parseFloat(data.saldo) || 0;

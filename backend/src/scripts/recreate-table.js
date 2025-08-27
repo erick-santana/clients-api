@@ -1,5 +1,6 @@
 const Database = require('../config/database');
 const logger = require('../utils/logger');
+const { v4: uuidv4 } = require('uuid');
 
 async function recreateTable() {
   const db = new Database();
@@ -24,10 +25,10 @@ async function recreateTable() {
     // Recriar tabela com estrutura correta
     await db.run(`
       CREATE TABLE clientes (
-        id INT AUTO_INCREMENT PRIMARY KEY,
+        id CHAR(36) PRIMARY KEY,
         nome VARCHAR(255) NOT NULL,
         email VARCHAR(255) UNIQUE NOT NULL,
-        saldo DECIMAL(10,2) DEFAULT 0.00,
+        saldo DECIMAL(17,2) DEFAULT 0.00,
         created_at TIMESTAMP NULL,
         updated_at TIMESTAMP NULL,
         INDEX idx_email (email),
@@ -42,11 +43,11 @@ async function recreateTable() {
     const dataUTC3MySQL = nowUTC3MySQLString();
     
     await db.run(`
-      INSERT INTO clientes (nome, email, saldo, created_at, updated_at) VALUES 
-      ('João Silva', 'joao@example.com', 1000.00, ?, ?),
-      ('Maria Santos', 'maria@example.com', 2500.00, ?, ?),
-      ('Pedro Oliveira', 'pedro@example.com', 500.00, ?, ?)
-    `, [dataUTC3MySQL, dataUTC3MySQL, dataUTC3MySQL, dataUTC3MySQL, dataUTC3MySQL, dataUTC3MySQL]);
+      INSERT INTO clientes (id, nome, email, saldo, created_at, updated_at) VALUES 
+      (?, 'João Silva', 'joao@example.com', 1000.00, ?, ?),
+      (?, 'Maria Santos', 'maria@example.com', 2500.00, ?, ?),
+      (?, 'Pedro Oliveira', 'pedro@example.com', 500.00, ?, ?)
+    `, [uuidv4(), dataUTC3MySQL, dataUTC3MySQL, uuidv4(), dataUTC3MySQL, dataUTC3MySQL, uuidv4(), dataUTC3MySQL, dataUTC3MySQL]);
     
     logger.info('Dados de exemplo inseridos com timezone UTC-3');
     

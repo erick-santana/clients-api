@@ -1,5 +1,5 @@
 import { Component, EventEmitter, OnInit, Output } from '@angular/core';
-import { FormBuilder, FormGroup } from '@angular/forms';
+import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { environment } from '../../../environments/environment';
 
 export interface FiltrosAvancados {
@@ -25,6 +25,14 @@ export class FiltrosAvancadosComponent implements OnInit {
   // Propriedades para controlar a exibição dos filtros
   mostrarFiltroSaldo = false;
   mostrarFiltroData = false;
+  
+  // Propriedades para validação de data
+  dataError = '';
+  mostrarDataError = false;
+  
+  // Propriedades para validação de saldo
+  saldoError = '';
+  mostrarSaldoError = false;
 
   ordenacaoOptions = [
     { value: 'nome', label: 'Nome' },
@@ -84,7 +92,46 @@ export class FiltrosAvancadosComponent implements OnInit {
   }
 
   aplicarFiltros(): void {
+    // Limpar erros anteriores
+    this.dataError = '';
+    this.mostrarDataError = false;
+    this.saldoError = '';
+    this.mostrarSaldoError = false;
+    
     const filtros = this.filtrosForm.value;
+    
+    // Validar saldos se o filtro de saldo estiver ativo
+    if (filtros.filtrarPorSaldo) {
+      const saldoMin = parseFloat(filtros.saldoMin);
+      const saldoMax = parseFloat(filtros.saldoMax);
+      
+      // Verificar se há valores negativos
+      if ((filtros.saldoMin && saldoMin < 0) || (filtros.saldoMax && saldoMax < 0)) {
+        this.saldoError = 'Os valores de saldo não podem ser negativos';
+        this.mostrarSaldoError = true;
+        return; // Não aplicar filtros se houver erro
+      }
+      
+      // Verificar se saldo máximo é menor que o mínimo (quando ambos estão preenchidos)
+      if (filtros.saldoMin && filtros.saldoMax && saldoMax < saldoMin) {
+        this.saldoError = 'O saldo máximo não pode ser menor que o saldo mínimo';
+        this.mostrarSaldoError = true;
+        return; // Não aplicar filtros se houver erro
+      }
+    }
+    
+    // Validar datas se o filtro de data estiver ativo
+    if (filtros.filtrarPorData && filtros.dataInicio && filtros.dataFim) {
+      const dataInicio = new Date(filtros.dataInicio);
+      const dataFim = new Date(filtros.dataFim);
+      
+      if (dataFim < dataInicio) {
+        this.dataError = 'A data fim não pode ser menor que a data início';
+        this.mostrarDataError = true;
+        return; // Não aplicar filtros se houver erro
+      }
+    }
+    
     this.emitFiltros(filtros);
   }
 
@@ -95,9 +142,35 @@ export class FiltrosAvancadosComponent implements OnInit {
       ordenarPor: 'created_at',
       ordenacao: 'desc'
     });
+    
+    // Limpar erros
+    this.dataError = '';
+    this.mostrarDataError = false;
+    this.saldoError = '';
+    this.mostrarSaldoError = false;
+    
     // Emitir filtros vazios para limpar a lista
     this.filtrosChange.emit({});
   }
+
+  onDateChange(event: any): void {
+    // Prevenir propagação do evento se necessário
+    if (event && event.stopPropagation) {
+      event.stopPropagation();
+    }
+    
+    // Limpar erro de data quando o usuário alterar as datas
+    this.dataError = '';
+    this.mostrarDataError = false;
+  }
+
+  onSaldoChange(): void {
+    // Limpar erro de saldo quando o usuário alterar os valores
+    this.saldoError = '';
+    this.mostrarSaldoError = false;
+  }
+
+
 
   private emitFiltros(filtros: any): void {
     // Remover valores vazios e checkboxes de controle
@@ -115,11 +188,19 @@ export class FiltrosAvancadosComponent implements OnInit {
 
     // Incluir filtros de data se o checkbox estiver marcado E os valores não estiverem vazios
     if (filtros.filtrarPorData) {
-      if (filtros.dataInicio && filtros.dataInicio.trim() !== '') {
-        filtrosLimpos.dataInicio = filtros.dataInicio;
+      if (filtros.dataInicio) {
+        // Converter a data para formato ISO string (YYYY-MM-DD)
+        const dataInicio = new Date(filtros.dataInicio);
+        if (!isNaN(dataInicio.getTime())) {
+          filtrosLimpos.dataInicio = dataInicio.toISOString().split('T')[0];
+        }
       }
-      if (filtros.dataFim && filtros.dataFim.trim() !== '') {
-        filtrosLimpos.dataFim = filtros.dataFim;
+      if (filtros.dataFim) {
+        // Converter a data para formato ISO string (YYYY-MM-DD)
+        const dataFim = new Date(filtros.dataFim);
+        if (!isNaN(dataFim.getTime())) {
+          filtrosLimpos.dataFim = dataFim.toISOString().split('T')[0];
+        }
       }
     }
 

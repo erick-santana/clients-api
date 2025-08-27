@@ -3,5 +3,9 @@ export const environment = {
   apiUrl: 'http://localhost:8080/api',
   apiTimeout: 30000,
   enableDebug: true,
-  version: '1.0.0'
+  version: '1.0.0',
+  auth: {
+    loginUrl: '/login',
+    defaultRoute: '/clientes'
+  }
 };
