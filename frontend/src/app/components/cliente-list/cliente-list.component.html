@@ -117,6 +117,13 @@
                     <mat-icon>remove_circle</mat-icon>
                   </button>
                   <button mat-icon-button 
+                          color="primary" 
+                          (click)="onHistorico(cliente)" 
+                          type="button"
+                          matTooltip="Histórico de Operações">
+                    <mat-icon>history</mat-icon>
+                  </button>
+                  <button mat-icon-button 
                           color="warn" 
                           (click)="onDelete(cliente)" 
                           type="button"

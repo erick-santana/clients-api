@@ -424,7 +424,10 @@ const createController = (clienteService = defaultClienteService) => {
    */
   const depositar = async (req, res, next) => {
     try {
-      const cliente = await clienteService.depositar(req.params.id, req.body);
+      // Extrair idempotency key do header
+      const idempotencyKey = req.headers['idempotency-key'];
+      
+      const cliente = await clienteService.depositar(req.params.id, req.body, idempotencyKey);
       res.json({ success: true, data: cliente });
     } catch (error) {
       if (error.message === 'Cliente não encontrado') {
@@ -495,7 +498,10 @@ const createController = (clienteService = defaultClienteService) => {
    */
   const sacar = async (req, res, next) => {
     try {
-      const cliente = await clienteService.sacar(req.params.id, req.body);
+      // Extrair idempotency key do header
+      const idempotencyKey = req.headers['idempotency-key'];
+      
+      const cliente = await clienteService.sacar(req.params.id, req.body, idempotencyKey);
       res.json({ success: true, data: cliente });
     } catch (error) {
       if (error.message === 'Cliente não encontrado') {
@@ -511,7 +517,103 @@ const createController = (clienteService = defaultClienteService) => {
     }
   };
 
-  return { listarTodos, buscarPorId, criar, atualizar, deletar, depositar, sacar };
+  /**
+   * @swagger
+   * /api/clientes/{id}/operacoes:
+   *   get:
+   *     summary: Buscar histórico de operações
+   *     description: Retorna o histórico de operações bancárias de um cliente
+   *     tags: [Operações Bancárias]
+   *     security:
+   *       - BearerAuth: []
+   *     parameters:
+   *       - in: path
+   *         name: id
+   *         required: true
+   *         schema:
+   *           type: string
+   *         description: ID do cliente
+   *       - in: query
+   *         name: page
+   *         schema:
+   *           type: integer
+   *           default: 1
+   *         description: Número da página
+   *       - in: query
+   *         name: limit
+   *         schema:
+   *           type: integer
+   *           default: 50
+   *         description: Número de itens por página
+   *     responses:
+   *       200:
+   *         description: Histórico de operações retornado com sucesso
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 success:
+   *                   type: boolean
+   *                   example: true
+   *                 data:
+   *                   type: array
+   *                   items:
+   *                     type: object
+   *                     properties:
+   *                       id:
+   *                         type: string
+   *                       tipo:
+   *                         type: string
+   *                         enum: [deposito, saque]
+   *                       valor:
+   *                         type: number
+   *                       saldo_anterior:
+   *                         type: number
+   *                       saldo_posterior:
+   *                         type: number
+   *                       created_at:
+   *                         type: string
+   *                       status:
+   *                         type: string
+   *                         enum: [pendente, concluida, falhou]
+   *                 pagination:
+   *                   type: object
+   *                   properties:
+   *                     page:
+   *                       type: integer
+   *                     limit:
+   *                       type: integer
+   *                     total:
+   *                       type: integer
+   *                     totalPages:
+   *                       type: integer
+   *       404:
+   *         description: Cliente não encontrado
+   *       401:
+   *         description: Não autorizado
+   *       500:
+   *         description: Erro interno do servidor
+   */
+  const getHistoricoOperacoes = async (req, res, next) => {
+    try {
+      const page = parseInt(req.query.page) || 1;
+      const limit = parseInt(req.query.limit) || 50;
+      
+      const result = await clienteService.getHistoricoOperacoes(req.params.id, page, limit);
+      res.json(result);
+    } catch (error) {
+      if (error.message === 'Cliente não encontrado') {
+        return next(new AppError(error.message, 404));
+      }
+      if (error.statusCode) {
+        return next(error);
+      }
+      next(new AppError('Erro ao buscar histórico de operações', 500));
+    }
+  };
+
+  return { listarTodos, buscarPorId, criar, atualizar, deletar, depositar, sacar, getHistoricoOperacoes };
 };
 
 const defaultController = createController();

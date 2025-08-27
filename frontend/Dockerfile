@@ -25,9 +25,9 @@ COPY nginx.conf /etc/nginx/nginx.conf
 # Copiar arquivos buildados
 COPY --from=builder /app/dist/clientes-frontend /usr/share/nginx/html
 
-# Criar usuário não-root
-RUN addgroup -g 1001 -S nginx && \
-    adduser -S -D -H -u 1001 -h /var/cache/nginx -s /sbin/nologin -G nginx -g nginx nginx
+# Criar usuário não-root (se não existir)
+RUN addgroup -g 1001 -S nginx 2>/dev/null || true && \
+    adduser -S -D -H -u 1001 -h /var/cache/nginx -s /sbin/nologin -G nginx -g nginx nginx 2>/dev/null || true
 
 # Configurar permissões
 RUN chown -R nginx:nginx /usr/share/nginx/html && \

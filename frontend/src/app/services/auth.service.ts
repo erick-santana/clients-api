@@ -1,5 +1,6 @@
 import { Injectable } from '@angular/core';
 import { BehaviorSubject, Observable } from 'rxjs';
+import { map } from 'rxjs/operators';
 import { HttpClient } from '@angular/common/http';
 import { environment } from '../../environments/environment';
 
@@ -105,8 +106,19 @@ export class AuthService {
    */
   getToken(): string | null {
     const auth = this.authTokenSubject.value;
+    if (environment.enableDebug) {
+      console.log('[AuthService] getToken() - auth:', auth);
+    }
+    
     if (auth && this.isTokenValid(auth)) {
+      if (environment.enableDebug) {
+        console.log('[AuthService] getToken() - token válido retornado');
+      }
       return auth.token;
+    }
+    
+    if (environment.enableDebug) {
+      console.log('[AuthService] getToken() - token inválido ou não encontrado');
     }
     return null;
   }
@@ -170,6 +182,10 @@ export class AuthService {
    * Definir autenticação
    */
   private setAuth(token: AuthToken, user: User): void {
+    if (environment.enableDebug) {
+      console.log('[AuthService] Definindo autenticação:', { token, user });
+    }
+    
     // Armazenar no localStorage
     localStorage.setItem(this.TOKEN_KEY, JSON.stringify(token));
     localStorage.setItem(this.USER_KEY, JSON.stringify(user));
@@ -177,6 +193,10 @@ export class AuthService {
     // Atualizar BehaviorSubjects
     this.authTokenSubject.next(token);
     this.userSubject.next(user);
+    
+    if (environment.enableDebug) {
+      console.log('[AuthService] Autenticação definida com sucesso');
+    }
   }
 
   /**
@@ -257,6 +277,3 @@ export class AuthService {
     }
   }
 }
-
-// Import necessário para o map
-import { map } from 'rxjs/operators';

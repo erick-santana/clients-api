@@ -86,13 +86,13 @@ class ClienteService {
     }
   }
 
-  async depositar(id, dadosOperacao) {
+  async depositar(id, dadosOperacao, idempotencyKey = null) {
     try {
       // Validar dados da operação
       const { valor } = validateOperacao(dadosOperacao);
       
-      // Realizar depósito via repository
-      const cliente = await this.clienteRepository.depositar(id, valor);
+      // Realizar depósito via repository com idempotência
+      const cliente = await this.clienteRepository.depositar(id, valor, idempotencyKey);
       return cliente.toJSON();
     } catch (error) {
       logger.error('Erro ao realizar depósito:', error);
@@ -100,16 +100,37 @@ class ClienteService {
     }
   }
 
-  async sacar(id, dadosOperacao) {
+  async sacar(id, dadosOperacao, idempotencyKey = null) {
     try {
       // Validar dados da operação
       const { valor } = validateOperacao(dadosOperacao);
       
-      // Realizar saque via repository
-      const cliente = await this.clienteRepository.sacar(id, valor);
+      // Realizar saque via repository com idempotência
+      const cliente = await this.clienteRepository.sacar(id, valor, idempotencyKey);
       return cliente.toJSON();
     } catch (error) {
       logger.error('Erro ao realizar saque:', error);
+      throw error;
+    }
+  }
+
+  async getHistoricoOperacoes(id, page = 1, limit = 50) {
+    try {
+      const offset = (page - 1) * limit;
+      const result = await this.clienteRepository.getHistoricoOperacoes(id, limit, offset);
+      
+      return {
+        success: true,
+        data: result.operacoes,
+        pagination: {
+          page,
+          limit,
+          total: result.total,
+          totalPages: Math.ceil(result.total / limit)
+        }
+      };
+    } catch (error) {
+      logger.error('Erro ao buscar histórico de operações:', error);
       throw error;
     }
   }

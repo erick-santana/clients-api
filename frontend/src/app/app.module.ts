@@ -34,6 +34,7 @@ import { OperacaoDialogComponent } from './components/operacao-dialog/operacao-d
 import { ConfirmationDialogComponent } from './components/confirmation-dialog/confirmation-dialog.component';
 import { FiltrosAvancadosComponent } from './components/filtros-avancados/filtros-avancados.component';
 import { LoginComponent } from './components/login/login.component';
+import { HistoricoOperacoesComponent } from './components/historico-operacoes/historico-operacoes.component';
 
 // Services
 import { ClienteService } from './services/cliente.service';
@@ -92,6 +93,7 @@ const routes: Routes = [
     ConfirmationDialogComponent,
     FiltrosAvancadosComponent,
     LoginComponent,
+    HistoricoOperacoesComponent,
   ],
   imports: [
     BrowserModule,

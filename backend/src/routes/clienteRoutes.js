@@ -17,6 +17,7 @@ const createRoutes = (clienteController = null) => {
   // Rotas para operações financeiras
   router.post('/:id/depositar', controller.depositar);
   router.post('/:id/sacar', controller.sacar);
+  router.get('/:id/operacoes', controller.getHistoricoOperacoes);
 
   return router;
 };

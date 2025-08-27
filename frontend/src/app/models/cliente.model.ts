@@ -28,3 +28,13 @@ export interface PaginatedResponse<T> {
     totalPages: number;
   };
 }
+
+export interface OperacaoHistorico {
+  id: string;
+  tipo: 'deposito' | 'saque';
+  valor: number;
+  saldo_anterior: number;
+  saldo_posterior: number;
+  created_at: string;
+  status: 'pendente' | 'concluida' | 'falhou';
+}

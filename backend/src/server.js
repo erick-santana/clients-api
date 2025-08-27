@@ -11,6 +11,7 @@ const clienteRoutes = require('./routes/clienteRoutes');
 const authRoutes = require('./routes/authRoutes');
 const healthController = require('./controllers/healthController');
 const { authenticateToken } = require('./middleware/auth');
+const idempotencyManager = require('./config/idempotency');
 const swaggerSpecs = require('./config/swagger');
 const swaggerSpecsProd = require('./config/swagger.prod');
 const db = require('./config/databaseInstance');
@@ -56,6 +57,10 @@ const createApp = (clienteController = null) => {
 
   // Rotas de autenticação (não protegidas)
   app.use('/api/auth', authRoutes);
+
+  // Middleware de idempotência para operações bancárias
+  app.use('/api/clientes/*/depositar', idempotencyManager.middleware());
+  app.use('/api/clientes/*/sacar', idempotencyManager.middleware());
 
   // Middleware de autenticação para todas as outras rotas
   app.use('/api', authenticateToken);

@@ -54,6 +54,26 @@ class Database {
           INDEX idx_created_at (created_at)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
       `);
+
+      // Criar tabela de operações para auditoria e idempotência
+      await this.run(`
+        CREATE TABLE IF NOT EXISTS operacoes (
+          id CHAR(36) PRIMARY KEY,
+          cliente_id CHAR(36) NOT NULL,
+          tipo ENUM('deposito', 'saque') NOT NULL,
+          valor DECIMAL(17,2) NOT NULL,
+          saldo_anterior DECIMAL(17,2) NOT NULL,
+          saldo_posterior DECIMAL(17,2) NOT NULL,
+          idempotency_key VARCHAR(255) UNIQUE,
+          status ENUM('pendente', 'concluida', 'falhou') DEFAULT 'pendente',
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+          INDEX idx_cliente_id (cliente_id),
+          INDEX idx_idempotency_key (idempotency_key),
+          INDEX idx_created_at (created_at),
+          FOREIGN KEY (cliente_id) REFERENCES clientes(id) ON DELETE CASCADE
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+      `);
       
       // Verificar se há dados na tabela
       const rows = await this.all('SELECT COUNT(*) as count FROM clientes');
@@ -134,6 +154,51 @@ class Database {
       return rows;
     } catch (error) {
       logger.error('Erro na consulta múltipla:', error);
+      throw error;
+    }
+  }
+
+  async beginTransaction() {
+    try {
+      if (!this.connection) {
+        throw new Error('Banco de dados não conectado');
+      }
+      
+      await this.connection.beginTransaction();
+      logger.debug('Transação iniciada');
+      return true;
+    } catch (error) {
+      logger.error('Erro ao iniciar transação:', error);
+      throw error;
+    }
+  }
+
+  async commitTransaction() {
+    try {
+      if (!this.connection) {
+        throw new Error('Banco de dados não conectado');
+      }
+      
+      await this.connection.commit();
+      logger.debug('Transação commitada');
+      return true;
+    } catch (error) {
+      logger.error('Erro ao fazer commit da transação:', error);
+      throw error;
+    }
+  }
+
+  async rollbackTransaction() {
+    try {
+      if (!this.connection) {
+        throw new Error('Banco de dados não conectado');
+      }
+      
+      await this.connection.rollback();
+      logger.debug('Transação revertida');
+      return true;
+    } catch (error) {
+      logger.error('Erro ao fazer rollback da transação:', error);
       throw error;
     }
   }

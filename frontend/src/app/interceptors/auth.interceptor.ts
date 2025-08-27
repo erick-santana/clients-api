@@ -17,10 +17,9 @@ export class AuthInterceptor implements HttpInterceptor {
   constructor(private authService: AuthService) {}
 
   intercept(request: HttpRequest<unknown>, next: HttpHandler): Observable<HttpEvent<unknown>> {
-    // Adicionar headers de segurança
+    // Adicionar headers de segurança (apenas se não existirem)
     let secureReq = request.clone({
       setHeaders: {
-        'Content-Type': 'application/json',
         'Accept': 'application/json',
         'X-Requested-With': 'XMLHttpRequest',
         'X-API-Version': '1.0',
@@ -29,15 +28,35 @@ export class AuthInterceptor implements HttpInterceptor {
       }
     });
 
+    // Adicionar Content-Type apenas para requisições que não são GET
+    if (request.method !== 'GET' && !request.headers.has('Content-Type')) {
+      secureReq = secureReq.clone({
+        setHeaders: {
+          'Content-Type': 'application/json'
+        }
+      });
+    }
+
     // Adicionar token de autenticação
     const token = this.authService.getToken();
+    if (environment.enableDebug) {
+      console.log('[AuthInterceptor] Token obtido:', token ? 'Sim' : 'Não');
+      console.log('[AuthInterceptor] URL da requisição:', request.url);
+    }
+    
     if (token) {
       secureReq = secureReq.clone({
         setHeaders: {
-          ...secureReq.headers,
           'Authorization': `Bearer ${token}`
         }
       });
+      if (environment.enableDebug) {
+        console.log('[AuthInterceptor] Token adicionado ao header Authorization');
+      }
+    } else {
+      if (environment.enableDebug) {
+        console.log('[AuthInterceptor] Nenhum token encontrado');
+      }
     }
 
     return next.handle(secureReq).pipe(
@@ -70,7 +89,6 @@ export class AuthInterceptor implements HttpInterceptor {
           if (newToken) {
             const newRequest = request.clone({
               setHeaders: {
-                ...request.headers,
                 'Authorization': `Bearer ${newToken}`
               }
             });

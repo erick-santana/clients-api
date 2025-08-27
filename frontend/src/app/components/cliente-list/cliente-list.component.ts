@@ -12,6 +12,7 @@ import { environment } from '../../../environments/environment';
 import { ClienteDialogComponent } from '../cliente-dialog/cliente-dialog.component';
 import { OperacaoDialogComponent } from '../operacao-dialog/operacao-dialog.component';
 import { FiltrosAvancados, FiltrosAvancadosComponent } from '../filtros-avancados/filtros-avancados.component';
+import { HistoricoOperacoesComponent } from '../historico-operacoes/historico-operacoes.component';
 
 @Component({
   selector: 'app-cliente-list',
@@ -257,6 +258,10 @@ export class ClienteListComponent implements OnInit, OnDestroy {
     this.openOperacaoDialog(cliente, 'sacar');
   }
 
+  onHistorico(cliente: Cliente): void {
+    this.abrirHistorico(cliente);
+  }
+
   openCreateDialog(): void {
     this.openClienteDialog();
   }
@@ -313,6 +318,28 @@ export class ClienteListComponent implements OnInit, OnDestroy {
               }
             });
         }
+      }
+    });
+  }
+
+  // Método para abrir histórico de operações
+  private abrirHistorico(cliente: Cliente): void {
+    console.log('Abrir histórico para cliente:', cliente);
+    
+    const dialogRef = this.dialog.open(HistoricoOperacoesComponent, {
+      width: '800px',
+      maxWidth: '90vw',
+      maxHeight: '80vh',
+      data: {
+        clienteId: cliente.id,
+        clienteNome: cliente.nome
+      },
+      disableClose: false
+    });
+
+    dialogRef.afterClosed().subscribe(result => {
+      if (environment.enableDebug) {
+        console.log('Histórico fechado:', result);
       }
     });
   }

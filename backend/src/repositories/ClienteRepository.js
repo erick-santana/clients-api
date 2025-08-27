@@ -202,7 +202,9 @@ class ClienteRepository {
     }
   }
 
-  async depositar(id, valor) {
+  async depositar(id, valor, idempotencyKey = null) {
+    let transactionStarted = false;
+    
     try {
       // Verificar se cliente existe
       const cliente = await this.findById(id);
@@ -210,11 +212,50 @@ class ClienteRepository {
         throw new Error('Cliente não encontrado');
       }
 
-      const novoSaldo = cliente.calcularSaldoAposDeposito(valor);
+      // Verificar se operação já foi executada (idempotência)
+      if (idempotencyKey) {
+        const operacaoExistente = await this.db.get(
+          'SELECT * FROM operacoes WHERE idempotency_key = ? AND status = "concluida"',
+          [idempotencyKey]
+        );
+        
+        if (operacaoExistente) {
+          logger.info(`Operação idempotente encontrada: ${idempotencyKey}`);
+          // Retornar cliente com saldo da operação anterior
+          const clienteAtualizado = await this.findById(id);
+          return clienteAtualizado;
+        }
+      }
+
+      // Iniciar transação
+      await this.db.beginTransaction();
+      transactionStarted = true;
+
+      // Lock otimista: verificar saldo novamente
+      const clienteAtual = await this.db.get(
+        'SELECT saldo FROM clientes WHERE id = ? FOR UPDATE',
+        [id]
+      );
+
+      if (!clienteAtual) {
+        throw new Error('Cliente não encontrado');
+      }
+
+      const saldoAnterior = parseFloat(clienteAtual.saldo);
+      const novoSaldo = saldoAnterior + valor;
       
       // Usar data atual em UTC-3 como objeto Date
       const dataUTC3 = nowUTC3();
+      const operacaoId = uuidv4();
 
+      // Registrar operação
+      await this.db.run(
+        `INSERT INTO operacoes (id, cliente_id, tipo, valor, saldo_anterior, saldo_posterior, idempotency_key, status) 
+         VALUES (?, ?, 'deposito', ?, ?, ?, ?, 'pendente')`,
+        [operacaoId, id, valor, saldoAnterior, novoSaldo, idempotencyKey]
+      );
+
+      // Atualizar saldo do cliente
       const result = await this.db.run(
         'UPDATE clientes SET saldo = ?, updated_at = ? WHERE id = ?',
         [novoSaldo, dataUTC3, id]
@@ -224,6 +265,18 @@ class ClienteRepository {
         throw new Error('Erro ao atualizar saldo');
       }
 
+      // Marcar operação como concluída
+      await this.db.run(
+        'UPDATE operacoes SET status = "concluida" WHERE id = ?',
+        [operacaoId]
+      );
+
+      // Commit da transação
+      await this.db.commitTransaction();
+      transactionStarted = false;
+
+      logger.info(`Depósito realizado: Cliente ${id}, Valor: ${valor}, Saldo anterior: ${saldoAnterior}, Novo saldo: ${novoSaldo}`);
+
       // Retornar cliente com saldo atualizado
       return new Cliente({
         ...cliente.toJSON(),
@@ -231,12 +284,24 @@ class ClienteRepository {
         updated_at: nowUTC3ISOString()
       });
     } catch (error) {
+      // Rollback em caso de erro
+      if (transactionStarted) {
+        try {
+          await this.db.rollbackTransaction();
+          logger.info('Transação revertida devido a erro');
+        } catch (rollbackError) {
+          logger.error('Erro ao fazer rollback:', rollbackError);
+        }
+      }
+      
       logger.error('Erro ao realizar depósito:', error);
       throw error;
     }
   }
 
-  async sacar(id, valor) {
+  async sacar(id, valor, idempotencyKey = null) {
+    let transactionStarted = false;
+    
     try {
       // Verificar se cliente existe
       const cliente = await this.findById(id);
@@ -244,16 +309,56 @@ class ClienteRepository {
         throw new Error('Cliente não encontrado');
       }
 
+      // Verificar se operação já foi executada (idempotência)
+      if (idempotencyKey) {
+        const operacaoExistente = await this.db.get(
+          'SELECT * FROM operacoes WHERE idempotency_key = ? AND status = "concluida"',
+          [idempotencyKey]
+        );
+        
+        if (operacaoExistente) {
+          logger.info(`Operação idempotente encontrada: ${idempotencyKey}`);
+          // Retornar cliente com saldo da operação anterior
+          const clienteAtualizado = await this.findById(id);
+          return clienteAtualizado;
+        }
+      }
+
+      // Iniciar transação
+      await this.db.beginTransaction();
+      transactionStarted = true;
+
+      // Lock otimista: verificar saldo novamente
+      const clienteAtual = await this.db.get(
+        'SELECT saldo FROM clientes WHERE id = ? FOR UPDATE',
+        [id]
+      );
+
+      if (!clienteAtual) {
+        throw new Error('Cliente não encontrado');
+      }
+
+      const saldoAnterior = parseFloat(clienteAtual.saldo);
+      
       // Verificar se há saldo suficiente
-      if (!cliente.temSaldoSuficiente(valor)) {
+      if (saldoAnterior < valor) {
         throw new Error('Saldo insuficiente');
       }
 
-      const novoSaldo = cliente.calcularSaldoAposSaque(valor);
+      const novoSaldo = saldoAnterior - valor;
       
       // Usar data atual em UTC-3 como objeto Date
       const dataUTC3 = nowUTC3();
+      const operacaoId = uuidv4();
 
+      // Registrar operação
+      await this.db.run(
+        `INSERT INTO operacoes (id, cliente_id, tipo, valor, saldo_anterior, saldo_posterior, idempotency_key, status) 
+         VALUES (?, ?, 'saque', ?, ?, ?, ?, 'pendente')`,
+        [operacaoId, id, valor, saldoAnterior, novoSaldo, idempotencyKey]
+      );
+
+      // Atualizar saldo do cliente
       const result = await this.db.run(
         'UPDATE clientes SET saldo = ?, updated_at = ? WHERE id = ?',
         [novoSaldo, dataUTC3, id]
@@ -263,6 +368,18 @@ class ClienteRepository {
         throw new Error('Erro ao atualizar saldo');
       }
 
+      // Marcar operação como concluída
+      await this.db.run(
+        'UPDATE operacoes SET status = "concluida" WHERE id = ?',
+        [operacaoId]
+      );
+
+      // Commit da transação
+      await this.db.commitTransaction();
+      transactionStarted = false;
+
+      logger.info(`Saque realizado: Cliente ${id}, Valor: ${valor}, Saldo anterior: ${saldoAnterior}, Novo saldo: ${novoSaldo}`);
+
       // Retornar cliente com saldo atualizado
       return new Cliente({
         ...cliente.toJSON(),
@@ -270,8 +387,60 @@ class ClienteRepository {
         updated_at: nowUTC3ISOString()
       });
     } catch (error) {
+      // Rollback em caso de erro
+      if (transactionStarted) {
+        try {
+          await this.db.rollbackTransaction();
+          logger.info('Transação revertida devido a erro');
+        } catch (rollbackError) {
+          logger.error('Erro ao fazer rollback:', rollbackError);
+        }
+      }
+      
       logger.error('Erro ao realizar saque:', error);
       throw error;
+    }
+  }
+
+  // Buscar histórico de operações de um cliente
+  async getHistoricoOperacoes(clienteId, limit = 50, offset = 0) {
+    try {
+      // Converter parâmetros para números para garantir compatibilidade com MySQL
+      const limitNum = parseInt(limit) || 50;
+      const offsetNum = parseInt(offset) || 0;
+      
+      logger.debug(`[ClienteRepository] getHistoricoOperacoes - clienteId: ${clienteId}, limit: ${limitNum}, offset: ${offsetNum}`);
+      
+      // Usar LIMIT e OFFSET como strings para evitar problemas de tipo
+      const operacoes = await this.db.all(
+        `SELECT id, tipo, valor, saldo_anterior, saldo_posterior, created_at, status
+         FROM operacoes 
+         WHERE cliente_id = ? 
+         ORDER BY created_at DESC 
+         LIMIT ${limitNum} OFFSET ${offsetNum}`,
+        [clienteId]
+      );
+
+      const total = await this.db.get(
+        'SELECT COUNT(*) as count FROM operacoes WHERE cliente_id = ?',
+        [clienteId]
+      );
+
+      return {
+        operacoes: operacoes.map(op => ({
+          id: op.id,
+          tipo: op.tipo,
+          valor: parseFloat(op.valor),
+          saldo_anterior: parseFloat(op.saldo_anterior),
+          saldo_posterior: parseFloat(op.saldo_posterior),
+          created_at: op.created_at,
+          status: op.status
+        })),
+        total: total.count
+      };
+    } catch (error) {
+      logger.error('Erro ao buscar histórico de operações:', error);
+      throw new Error('Erro ao buscar histórico de operações');
     }
   }
 }

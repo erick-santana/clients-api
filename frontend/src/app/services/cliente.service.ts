@@ -1,10 +1,11 @@
 import { Injectable } from '@angular/core';
-import { HttpClient, HttpErrorResponse, HttpParams } from '@angular/common/http';
-import { Observable, throwError, BehaviorSubject, timeout } from 'rxjs';
-import { catchError, retry, shareReplay, tap } from 'rxjs/operators';
+import { HttpClient, HttpErrorResponse, HttpParams, HttpHeaders } from '@angular/common/http';
+import { Observable, throwError, BehaviorSubject, timeout, timer } from 'rxjs';
+import { catchError, retry, shareReplay, tap, retryWhen, delayWhen, take, concatMap } from 'rxjs/operators';
 import { environment } from '../../environments/environment';
-import { Cliente, Operacao, ApiResponse, PaginatedResponse } from '../models/cliente.model';
+import { Cliente, Operacao, ApiResponse, PaginatedResponse, OperacaoHistorico } from '../models/cliente.model';
 import { FiltrosAvancados } from '../components/filtros-avancados/filtros-avancados.component';
+import { v4 as uuidv4 } from 'uuid';
 
 @Injectable({
   providedIn: 'root'
@@ -32,6 +33,46 @@ export class ClienteService {
   );
 
   constructor(private http: HttpClient) {}
+
+  // Configuração de retry inteligente
+  private readonly retryConfig = {
+    maxRetries: 3,
+    retryDelay: 1000, // 1 segundo
+    backoffMultiplier: 2, // Dobra o delay a cada tentativa
+    retryableStatuses: [408, 429, 500, 502, 503, 504] // Status codes que devem ser retryados
+  };
+
+  // Função para retry inteligente
+  private retryWithBackoff<T>() {
+    return retryWhen<T>((errors: Observable<any>) => 
+      errors.pipe(
+        concatMap((error, index) => {
+          const retryAttempt = index + 1;
+          
+          // Verificar se deve fazer retry
+          if (retryAttempt > this.retryConfig.maxRetries) {
+            return throwError(() => error);
+          }
+
+          // Verificar se o erro é retryável
+          if (error instanceof HttpErrorResponse) {
+            if (!this.retryConfig.retryableStatuses.includes(error.status)) {
+              return throwError(() => error);
+            }
+          }
+
+          // Calcular delay com backoff exponencial
+          const delay = this.retryConfig.retryDelay * Math.pow(this.retryConfig.backoffMultiplier, retryAttempt - 1);
+          
+          if (environment.enableDebug) {
+            console.log(`[ClienteService] Tentativa ${retryAttempt} de ${this.retryConfig.maxRetries}. Aguardando ${delay}ms...`);
+          }
+
+          return timer(delay);
+        })
+      )
+    );
+  }
 
   // Listar todos os clientes com paginação
   getClientes(page: number = 1, limit: number = 10, search?: string, filtros?: FiltrosAvancados): Observable<PaginatedResponse<Cliente>> {
@@ -73,7 +114,7 @@ export class ClienteService {
     return this.http.get<PaginatedResponse<Cliente>>(`${this.apiUrl}/clientes`, { params })
       .pipe(
         timeout(environment.apiTimeout),
-        tap(response => {
+        tap((response: PaginatedResponse<Cliente>) => {
           if (environment.enableDebug) {
             console.log(`[ClienteService] Resposta recebida:`, response);
           }
@@ -100,7 +141,7 @@ export class ClienteService {
     return this.http.post<ApiResponse<Cliente>>(`${this.apiUrl}/clientes`, cliente)
       .pipe(
         timeout(environment.apiTimeout),
-        tap(response => {
+        tap((response: ApiResponse<Cliente>) => {
           if (response.success && response.data) {
             this.clearCache(); // Limpar cache após criar cliente
           }
@@ -114,7 +155,7 @@ export class ClienteService {
     return this.http.put<ApiResponse<Cliente>>(`${this.apiUrl}/clientes/${id}`, cliente)
       .pipe(
         timeout(environment.apiTimeout),
-        tap(response => {
+        tap((response: ApiResponse<Cliente>) => {
           if (response.success && response.data) {
             this.clearCache(); // Limpar cache após atualizar cliente
           }
@@ -128,7 +169,7 @@ export class ClienteService {
     return this.http.delete<ApiResponse<void>>(`${this.apiUrl}/clientes/${id}`)
       .pipe(
         timeout(environment.apiTimeout),
-        tap(response => {
+        tap((response: ApiResponse<void>) => {
           if (response.success) {
             this.clearCache(); // Limpar cache após deletar cliente
           }
@@ -137,28 +178,54 @@ export class ClienteService {
       );
   }
 
-  // Depositar valor
+  // Depositar valor com idempotência
   depositar(id: number, operacao: { valor: number }): Observable<ApiResponse<Cliente>> {
-    return this.http.post<ApiResponse<Cliente>>(`${this.apiUrl}/clientes/${id}/depositar`, operacao)
+    const idempotencyKey = uuidv4();
+    const headers = new HttpHeaders({
+      'idempotency-key': idempotencyKey
+    });
+
+    if (environment.enableDebug) {
+      console.log(`[ClienteService] Depósito com idempotency key: ${idempotencyKey}`);
+    }
+
+    return this.http.post<ApiResponse<Cliente>>(`${this.apiUrl}/clientes/${id}/depositar`, operacao, { headers })
       .pipe(
         timeout(environment.apiTimeout),
-        tap(response => {
+        this.retryWithBackoff<ApiResponse<Cliente>>(), // Retry inteligente
+        tap((response: ApiResponse<Cliente>) => {
           if (response.success && response.data) {
             this.clearCache(); // Limpar cache após depósito
+            if (environment.enableDebug) {
+              console.log(`[ClienteService] Depósito realizado com sucesso. Idempotency key: ${idempotencyKey}`);
+            }
           }
         }),
         catchError(this.handleError)
       );
   }
 
-  // Sacar valor
+  // Sacar valor com idempotência
   sacar(id: number, operacao: { valor: number }): Observable<ApiResponse<Cliente>> {
-    return this.http.post<ApiResponse<Cliente>>(`${this.apiUrl}/clientes/${id}/sacar`, operacao)
+    const idempotencyKey = uuidv4();
+    const headers = new HttpHeaders({
+      'idempotency-key': idempotencyKey
+    });
+
+    if (environment.enableDebug) {
+      console.log(`[ClienteService] Saque com idempotency key: ${idempotencyKey}`);
+    }
+
+    return this.http.post<ApiResponse<Cliente>>(`${this.apiUrl}/clientes/${id}/sacar`, operacao, { headers })
       .pipe(
         timeout(environment.apiTimeout),
-        tap(response => {
+        this.retryWithBackoff<ApiResponse<Cliente>>(), // Retry inteligente
+        tap((response: ApiResponse<Cliente>) => {
           if (response.success && response.data) {
             this.clearCache(); // Limpar cache após saque
+            if (environment.enableDebug) {
+              console.log(`[ClienteService] Saque realizado com sucesso. Idempotency key: ${idempotencyKey}`);
+            }
           }
         }),
         catchError(this.handleError)
@@ -195,6 +262,29 @@ export class ClienteService {
     if (environment.enableDebug) {
       console.log(`[ClienteService] Cache limpo para busca: ${search}`);
     }
+  }
+
+  // Buscar histórico de operações de um cliente
+  getHistoricoOperacoes(clienteId: string, page: number = 1, limit: number = 50): Observable<PaginatedResponse<OperacaoHistorico>> {
+    const params = new HttpParams()
+      .set('page', page.toString())
+      .set('limit', limit.toString());
+
+    if (environment.enableDebug) {
+      console.log(`[ClienteService] Buscando histórico de operações para cliente: ${clienteId}`);
+    }
+
+    return this.http.get<PaginatedResponse<OperacaoHistorico>>(`${this.apiUrl}/clientes/${clienteId}/operacoes`, { params })
+      .pipe(
+        timeout(environment.apiTimeout),
+        this.retryWithBackoff<PaginatedResponse<OperacaoHistorico>>(), // Retry inteligente
+        tap((response: PaginatedResponse<OperacaoHistorico>) => {
+          if (environment.enableDebug) {
+            console.log(`[ClienteService] Histórico de operações recebido:`, response);
+          }
+        }),
+        catchError(this.handleError)
+      );
   }
 
   // Tratamento de erros centralizado
