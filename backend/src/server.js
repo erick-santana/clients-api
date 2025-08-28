@@ -13,7 +13,6 @@ const healthController = require('./controllers/healthController');
 const { authenticateToken } = require('./middleware/auth');
 const idempotencyManager = require('./config/idempotency');
 const swaggerSpecs = require('./config/swagger');
-const swaggerSpecsProd = require('./config/swagger.prod');
 const db = require('./config/databaseInstance');
 const logger = require('./utils/logger');
 
@@ -36,7 +35,7 @@ const createApp = (clienteController = null) => {
   app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
   // Documentação da API (Swagger)
-  const specs = process.env.NODE_ENV === 'production' ? swaggerSpecsProd : swaggerSpecs;
+  const specs = swaggerSpecs;
   app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(specs, {
     customCss: '.swagger-ui .topbar { display: none }',
     customSiteTitle: 'API de Clientes - Documentação',
