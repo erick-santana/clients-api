@@ -6,7 +6,35 @@ const options = {
     info: {
       title: 'API de Clientes',
       version: '1.0.0',
-      description: 'API RESTful para gerenciamento de clientes com operações bancárias',
+      description: `API RESTful para gerenciamento de clientes com operações bancárias
+
+## 🔒 Rate Limiting
+
+A API implementa rate limiting em múltiplas camadas para garantir segurança e estabilidade:
+
+### **Limites Globais:**
+- **100 requisições por IP** a cada 15 minutos
+
+### **Limites Específicos:**
+- **Autenticação**: 5 tentativas de login por IP a cada 15 minutos
+- **Operações Bancárias**: 10 operações por IP a cada 1 minuto
+
+### **Headers de Rate Limiting:**
+- \`X-RateLimit-Limit\`: Limite de requisições
+- \`X-RateLimit-Remaining\`: Requisições restantes
+- \`X-RateLimit-Reset\`: Timestamp de reset do limite
+
+### **Respostas de Rate Limiting:**
+- **Status**: 429 Too Many Requests
+- **Código**: RATE_LIMIT_EXCEEDED, AUTH_RATE_LIMIT_EXCEEDED, BANKING_RATE_LIMIT_EXCEEDED
+
+## 🔐 Segurança
+
+- **Autenticação**: JWT Bearer Token obrigatório
+- **Idempotência**: Header idempotency-key obrigatório para operações bancárias
+- **Validação**: Validação rigorosa de entrada de dados
+- **Sanitização**: Sanitização automática de dados
+- **CORS**: Configurado para origens específicas`,
       contact: {
         name: 'Equipe de Desenvolvimento',
         email: 'dev@example.com',
