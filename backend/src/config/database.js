@@ -6,11 +6,11 @@ class Database {
   constructor() {
     this.connection = null;
     this.config = {
-      host: process.env.RDS_HOSTNAME || process.env.MYSQL_HOST || 'localhost',
-      port: process.env.RDS_PORT || process.env.MYSQL_PORT || 3306,
-      user: process.env.RDS_USERNAME || process.env.MYSQL_USER || 'clientes_user',
-      password: process.env.RDS_PASSWORD || process.env.MYSQL_PASSWORD || 'clientes_password',
-      database: process.env.RDS_DB_NAME || process.env.MYSQL_DATABASE || 'clientes_dev',
+      host: process.env.MYSQL_HOST || 'localhost',
+      port: process.env.MYSQL_PORT || 3306,
+      user: process.env.MYSQL_USER || 'clientes_user',
+      password: process.env.MYSQL_PASSWORD || 'clientes_password',
+      database: process.env.MYSQL_DATABASE || 'clientes_dev',
       waitForConnections: true,
       connectionLimit: 10,
       queueLimit: 0,

@@ -109,7 +109,7 @@ graph TD
     B -->|Não| D[Iniciar transação]
     C -->|Existe| E[Retornar resultado anterior]
     C -->|Não existe| D
-    D --> F[Lock otimista FOR UPDATE]
+    D --> F[Lock otimista]
     F --> G[Registrar operação como pendente]
     G --> H[Atualizar saldo do cliente]
     H --> I[Marcar operação como concluída]
