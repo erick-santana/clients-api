@@ -20,8 +20,6 @@ const login = async (req, res, next) => {
       return next(new AppError('Credenciais inválidas', 401));
     }
 
-    // Em desenvolvimento, comparar senha diretamente
-    // Em produção, seria feito hash da senha
     if (password !== credentials.password) {
       logger.warn(`Tentativa de login com senha inválida para usuário: ${username}`);
       return next(new AppError('Credenciais inválidas', 401));
